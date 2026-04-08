@@ -43,7 +43,8 @@ def parse(filename: Path) -> dict[str, Any]:
         "Parse information for building a hub."
         result = {}
         info = s.split(maxsplit=3)
-        result['name'], result['x'], result['y'] = info[:3]
+        result['name'] = info[0]
+        result['x'], result['y'] = int(info[1]), int(info[2])
         if len(info) > 3:
             result.update(parse_zone_metadata(info[3].strip('[]').split()))
         return result
