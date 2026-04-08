@@ -30,4 +30,4 @@ class Zone:
             f'{self.zonetype.name.capitalize():<12} ' \
             f'{self.color.capitalize():<12} {self.max_drones:>2}'
         linknames = [x[0].name for x in self.links]
-        return f'{result}\n\033[2m    Links: {", ".join(linknames)}\033[0m'
+        return f'{result}\n\033[2m└─> {", ".join(linknames)}\033[0m'
