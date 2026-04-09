@@ -1,5 +1,4 @@
 from pathlib import Path
-from pprint import pprint
 
 import pygame
 
@@ -16,4 +15,3 @@ def load_assets(path: Path) -> dict[str, pygame.Surface]:
                         pygame.image.load(f).convert_alpha()
                 }
             )
-    pprint(IMG)

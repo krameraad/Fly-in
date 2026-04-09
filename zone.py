@@ -40,5 +40,8 @@ class Zone:
         linknames = [x[0].name for x in self.links]
         return f'{result}\n\033[2m└─> {", ".join(linknames)}\033[0m'
 
+    def pos(self) -> tuple[int, int]:
+        return (self.x, self.y)
+
     def draw(self, screen: pygame.Surface, offset: tuple) -> None:
         screen.blit(self.img, self.rect.move(*offset))

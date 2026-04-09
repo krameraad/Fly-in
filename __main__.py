@@ -6,6 +6,7 @@ import pygame
 
 import assets
 # from zone import Zone
+from link import Link
 from parser import parse
 from builder import build
 
@@ -14,6 +15,17 @@ from builder import build
 class Context:
     cam_x: int = 0
     cam_y: int = 0
+    camspeed_x: float = 0.0
+    camspeed_y: float = 0.0
+
+    def update(self) -> None:
+        self.camspeed_x *= 0.9
+        self.camspeed_y *= 0.9
+        self.cam_x = round(self.cam_x + self.camspeed_x)
+        self.cam_y = round(self.cam_y + self.camspeed_y)
+
+    def get_offset(self) -> tuple[int, int]:
+        return (self.cam_x, self.cam_y)
 
 
 pygame.init()
@@ -32,6 +44,8 @@ ctx = Context(w // 2, h // 2)
 data = parse(Path(sys.argv[1]), unit)
 zones = build(data)
 start, end = data['start_hub']['name'], data['end_hub']['name']
+links = [Link(zones[x[0]].pos(), zones[x[1]].pos(), x[2])
+         for x in data['links']]
 
 
 print(f"\033[1m{'Zone':<24} {'x':>4} {'y':>4} {'Type':<12} "
@@ -45,20 +59,23 @@ running = True
 while running:
     for event in pygame.event.get():
         keys = pygame.key.get_pressed()
-        if event.type == pygame.QUIT:
+        if event.type == pygame.QUIT or keys[pygame.K_ESCAPE]:
             running = False
         if keys[pygame.K_LEFT]:
-            ctx.cam_x -= 1
+            ctx.camspeed_x += 0.2
         if keys[pygame.K_RIGHT]:
-            ctx.cam_x += 1
+            ctx.camspeed_x -= 0.2
         if keys[pygame.K_UP]:
-            ctx.cam_y -= 1
+            ctx.camspeed_y += 0.2
         if keys[pygame.K_DOWN]:
-            ctx.cam_y += 1
+            ctx.camspeed_y -= 0.2
 
-    screen.fill((30, 30, 30))
+    ctx.update()
+    screen.fill((100, 100, 100))
+    for x in links:
+        x.draw(screen, ctx.get_offset())
     for k, v in zones.items():
-        v.draw(screen, (ctx.cam_x, ctx.cam_y))
+        v.draw(screen, ctx.get_offset())
 
     pygame.display.flip()
     clock.tick(60)
