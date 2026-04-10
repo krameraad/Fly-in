@@ -38,7 +38,7 @@ clock = pygame.time.Clock()
 pygame.key.set_repeat(1)
 
 assets.load_assets(Path('assets'))
-
+# bg_rect = assets.IMG['bg'].get_rect(center=(800, 600))
 
 ctx = Context(w // 2, h // 2)
 data = parse(Path(sys.argv[1]), unit)
@@ -72,6 +72,7 @@ while running:
 
     ctx.update()
     screen.fill((100, 100, 100))
+    # screen.blit(assets.IMG['bg'], bg_rect)
     for x in links:
         x.draw(screen, ctx.get_offset())
     for k, v in zones.items():

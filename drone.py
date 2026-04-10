@@ -19,4 +19,7 @@ class Drone:
         self.rect = self.img.get_rect(center=(self.x, self.y))
 
     def draw(self, screen: pygame.Surface, offset: tuple) -> None:
-        screen.blit(self.img, self.rect.move(*offset))
+        screen.blit(
+            self.img,
+            self.rect.move(*offset)
+        )

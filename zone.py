@@ -1,5 +1,6 @@
 from enum import Enum, auto
 from dataclasses import dataclass, field
+import webcolors
 
 import pygame
 
@@ -29,7 +30,21 @@ class Zone:
     a tuple of connected `Zone` and `max_link_capacity`."""
 
     def __post_init__(self) -> None:
-        self.img = assets.IMG['zone_' + self.zonetype.name.lower()]
+        if self.color == 'rainbow':
+            self.color = 'white'
+        if self.color == 'black':
+            self.color = 'midnightblue'
+
+        base_img = assets.IMG[f'zone_{self.zonetype.name.lower()}']
+        asset = f'zone_{self.zonetype.name.lower()}:{self.color}'
+
+        if asset not in assets.IMG:
+            assets.IMG.update({asset: base_img.copy()})
+            assets.IMG[asset].fill(
+                webcolors.name_to_rgb(self.color),
+                special_flags=pygame.BLEND_MULT
+            )
+        self.img = assets.IMG[asset]
         self.rect = self.img.get_rect(center=(self.x, self.y))
 
     def __str__(self) -> str:
@@ -44,4 +59,7 @@ class Zone:
         return (self.x, self.y)
 
     def draw(self, screen: pygame.Surface, offset: tuple) -> None:
-        screen.blit(self.img, self.rect.move(*offset))
+        screen.blit(
+            self.img,
+            self.rect.move(*offset)
+        )

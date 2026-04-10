@@ -11,20 +11,20 @@ class Link:
     max_link_capacity: int = 1
 
     def __post_init__(self) -> None:
-        self.thickness = 4 * self.max_link_capacity
+        self.thickness = 8 * self.max_link_capacity
 
     def draw(self, screen: pygame.Surface, offset: tuple[int, int]) -> None:
         pygame.draw.line(
             screen,
             (0, 0, 0),
-            tuple(x + y for x, y in zip(self.start, offset)),
-            tuple(x + y for x, y in zip(self.end, offset)),
+            (self.start[0] + offset[0], self.start[1] + offset[1]),
+            (self.end[0] + offset[0], self.end[1] + offset[1]),
             self.thickness + 4,
         )
         pygame.draw.line(
             screen,
             (255, 255, 255),
-            tuple(x + y for x, y in zip(self.start, offset)),
-            tuple(x + y for x, y in zip(self.end, offset)),
+            (self.start[0] + offset[0], self.start[1] + offset[1]),
+            (self.end[0] + offset[0], self.end[1] + offset[1]),
             self.thickness,
         )
