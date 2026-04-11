@@ -43,7 +43,7 @@ pygame.display.set_caption('Fly-in')
 clock = pygame.time.Clock()
 
 assets.load_assets(Path('assets'))
-# bg_rect = assets.IMG['bg'].get_rect(center=(800, 600))
+bg_rect = assets.IMG['bg'].get_rect(center=(800, 600))
 
 cam = Vector2(w // 2, h // 2)
 data = parse(Path(sys.argv[1]))
@@ -65,7 +65,7 @@ for x in zones.values():
 
 ui_1 = pygame.font.Font.render(
     assets.FONT_BIG,
-    'Mouse 1: Advance simulation.',
+    'Mouse 1: Next turn.',
     True,
     (255, 255, 255),
     (0, 0, 0)
@@ -81,15 +81,23 @@ ui_2 = pygame.font.Font.render(
 ui_2_rect = ui_2.get_rect(left=16, top=64)
 ui_3 = pygame.font.Font.render(
     assets.FONT_BIG,
-    'Space: Enable autoplay.',
+    'Space: Autoplay off.',
     True,
-    (255, 255, 255),
+    (255, 127, 127),
     (0, 0, 0)
 )
 ui_3_rect = ui_3.get_rect(left=16, top=112)
+ui_4 = pygame.font.Font.render(
+    assets.FONT_BIG,
+    'Space: Autoplay ON.',
+    True,
+    (127, 255, 127),
+    (0, 0, 0)
+)
+ui_4_rect = ui_4.get_rect(left=16, top=112)
 
 
-autoplay, autoplay_timer = False, 0
+autoplay, autoplay_timer = False, 500
 running = True
 while running:
     for event in pygame.event.get():
@@ -106,9 +114,10 @@ while running:
         if event.type == pygame.KEYDOWN:
             if keys[pygame.K_SPACE]:
                 autoplay = not autoplay
+                autoplay_timer = 500
 
     screen.fill((100, 100, 100))
-    # screen.blit(assets.IMG['bg'], bg_rect)
+    screen.blit(assets.IMG['bg'], bg_rect)
     for x in links:
         x.draw(screen, cam)
     for x in zones.values():
@@ -119,7 +128,10 @@ while running:
 
     screen.blit(ui_1, ui_1_rect)
     screen.blit(ui_2, ui_2_rect)
-    screen.blit(ui_3, ui_3_rect)
+    if autoplay:
+        screen.blit(ui_4, ui_4_rect)
+    else:
+        screen.blit(ui_3, ui_3_rect)
 
     pygame.display.flip()
     clock.tick(60)

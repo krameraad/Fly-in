@@ -107,7 +107,7 @@ class Drone:
     def update(self) -> None:
         self.speed *= 0.75
         wishdir = self.zone.pos - self.pos
-        if wishdir.length() > 32:
+        if wishdir.length() > 16:
             self.speed += (self.zone.pos - self.pos).normalize() * 2
         else:
             self.speed *= 0.75
