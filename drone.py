@@ -18,6 +18,8 @@ class Drone:
         self.speed = Vector2(0, 0)
         self.img = assets.IMG['drone']
         self.rect = self.img.get_rect(center=(self.pos.x, self.pos.y))
+        self.lagged = False
+
         self.zone.drone_load += 1
 
     def move(self, destination: Zone) -> None:
@@ -26,12 +28,22 @@ class Drone:
         if destination.drone_load >= destination.max_drones \
                 and destination.zonetype != ZoneType.END:
             return
+        if self.lagged:
+            self.lagged = False
+            return
+        if destination.zonetype == ZoneType.RESTRICTED:
+            self.lagged = True
         print(f'{self.name}-{destination.name}', end=' ')
         self.zone.drone_load -= 1
         destination.drone_load += 1
         self.zone = destination
 
-    def dijkstras(self, graph: list[Zone], goal: Zone) -> list[Zone]:
+    def dijkstras(
+            self,
+            graph: list[Zone],
+            goal: Zone,
+            loadmap: dict[str, int]
+            ) -> list[Zone]:
         """Implementation of Dijkstra's algorithm.
 
         Args:
@@ -41,6 +53,7 @@ class Drone:
         Returns:
             List of zones that make up the path,
             or an empty list if no path could be found."""
+        # Make a table with the necessary information for each zone.
         g = {
             x.name: {
                 'zone': x,
@@ -63,10 +76,12 @@ class Drone:
 
                 current = g[queue[0].name]
                 neighbor = g[link[0].name]
-                distance = int(
-                    neighbor['zone'].zonetype == ZoneType.RESTRICTED
-                    or link[0].drone_load >= link[0].max_drones
-                ) + 1
+                distance = 100
+                if neighbor['zone'].zonetype == ZoneType.RESTRICTED \
+                        or loadmap[link[0].name] >= link[0].max_drones:
+                    distance *= 2
+                if neighbor['zone'].zonetype == ZoneType.PRIORITY:
+                    distance // 100
                 if current['cost'] + distance < neighbor['cost']:
                     neighbor['cost'] = current['cost'] + distance
                     neighbor['prev'] = current['zone']

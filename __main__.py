@@ -1,6 +1,5 @@
 import sys
 from pathlib import Path
-from dataclasses import dataclass
 
 import pygame
 from pygame import Vector2
@@ -13,15 +12,24 @@ from parser import parse
 from builder import build
 
 
+turncount = 0
+
+
 def execute_turn(
-        graph: list[Zone],
+        zones: dict[str, Zone],
         goal: Zone,
         drones: list[Drone]
         ) -> None:
+    "Allow all drones to make a move towards the goal."
+    global turncount
+    if all([drone.zone is goal for drone in drones]):
+        return
+    turncount += 1
+    loadmap = {k: v.drone_load for k, v in zones.items()}
     for drone in drones:
         if drone.zone is goal:
             continue
-        path = drone.dijkstras(graph, goal)
+        path = drone.dijkstras(list(zones.values()), goal, loadmap)
         if path:
             drone.move(path[0])
     print()
@@ -71,8 +79,17 @@ ui_2 = pygame.font.Font.render(
     (0, 0, 0)
 )
 ui_2_rect = ui_2.get_rect(left=16, top=64)
+ui_3 = pygame.font.Font.render(
+    assets.FONT_BIG,
+    'Space: Enable autoplay.',
+    True,
+    (255, 255, 255),
+    (0, 0, 0)
+)
+ui_3_rect = ui_3.get_rect(left=16, top=112)
 
 
+autoplay, autoplay_timer = False, 0
 running = True
 while running:
     for event in pygame.event.get():
@@ -85,7 +102,10 @@ while running:
             running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             if pygame.mouse.get_pressed()[0]:
-                execute_turn(list(zones.values()), zones[end], drones)
+                execute_turn(zones, zones[end], drones)
+        if event.type == pygame.KEYDOWN:
+            if keys[pygame.K_SPACE]:
+                autoplay = not autoplay
 
     screen.fill((100, 100, 100))
     # screen.blit(assets.IMG['bg'], bg_rect)
@@ -99,8 +119,17 @@ while running:
 
     screen.blit(ui_1, ui_1_rect)
     screen.blit(ui_2, ui_2_rect)
+    screen.blit(ui_3, ui_3_rect)
 
     pygame.display.flip()
     clock.tick(60)
 
+    if autoplay:
+        autoplay_timer += clock.get_time()
+        if autoplay_timer > 500:
+            autoplay_timer -= 500
+            execute_turn(zones, zones[end], drones)
+
+# Optionally print total turn count for debugging.
+# print('Turn count:', turncount)
 pygame.quit()
