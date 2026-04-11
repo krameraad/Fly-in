@@ -5,7 +5,7 @@ import pygame
 
 @dataclass
 class Link:
-    """Node in a network of zones that can be traversed by drones."""
+    """Link to be drawn in the graphical display. No functionality."""
     start: tuple[int, int]
     end: tuple[int, int]
     max_link_capacity: int = 1

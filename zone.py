@@ -30,22 +30,41 @@ class Zone:
     a tuple of connected `Zone` and `max_link_capacity`."""
 
     def __post_init__(self) -> None:
-        if self.color == 'rainbow':
-            self.color = 'white'
-        if self.color == 'black':
-            self.color = 'midnightblue'
-
         base_img = assets.IMG[f'zone_{self.zonetype.name.lower()}']
         asset = f'zone_{self.zonetype.name.lower()}:{self.color}'
 
         if asset not in assets.IMG:
             assets.IMG.update({asset: base_img.copy()})
-            assets.IMG[asset].fill(
-                webcolors.name_to_rgb(self.color),
-                special_flags=pygame.BLEND_MULT
-            )
+            if self.color == 'rainbow':
+                assets.IMG[asset].blit(
+                    assets.IMG['rainbow'],
+                    (0, 0),
+                    special_flags=pygame.BLEND_MULT
+                )
+            elif self.color == 'black':
+                mask = assets.IMG[asset].copy()
+                mask.fill((255, 255, 255), special_flags=pygame.BLEND_ADD)
+                mask.blit(base_img, (0, 0), special_flags=pygame.BLEND_SUB)
+                assets.IMG.update({asset: mask})
+            else:
+                assets.IMG[asset].fill(
+                    webcolors.name_to_rgb(self.color),
+                    special_flags=pygame.BLEND_MULT
+                )
         self.img = assets.IMG[asset]
         self.rect = self.img.get_rect(center=(self.x, self.y))
+
+        self.label = pygame.font.Font.render(
+            assets.FONT,
+            f'max {self.max_drones}',
+            True,
+            (255, 255, 255),
+            (0, 0, 0)
+        )
+        self.label_rect = self.label.get_rect(
+            left=self.x + 12,
+            top=self.y + 12,
+        )
 
     def __str__(self) -> str:
         result = \
@@ -63,3 +82,9 @@ class Zone:
             self.img,
             self.rect.move(*offset)
         )
+        if self.max_drones > 1:
+            screen.blit(
+                self.label,
+                self.label_rect.move(*offset),
+                (0, 0, 128, 21)
+            )
