@@ -6,7 +6,10 @@ import pygame
 IMG: dict[str, pygame.Surface] = {}
 
 pygame.font.init()
-FONT: pygame.font.Font = pygame.font.Font('font/lovely-pixels.otf', size=24)
+FONT: pygame.font.Font = pygame.font.Font(
+    'font/lovely-pixels.otf', size=24)
+FONT_BIG: pygame.font.Font = pygame.font.Font(
+    'font/lovely-pixels.otf', size=48)
 
 
 def load_assets(path: Path) -> None:

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import pygame
+from pygame import Vector2
 
 import assets
 from zone import Zone, ZoneType
@@ -11,22 +12,35 @@ class Drone:
     """Drone that moves between nodes."""
     name: str
     zone: Zone
-    x: int = 0
-    y: int = 0
 
     def __post_init__(self) -> None:
+        self.pos = Vector2(0, 0)
+        self.speed = Vector2(0, 0)
         self.img = assets.IMG['drone']
-        self.rect = self.img.get_rect(center=(self.x, self.y))
-        self.zone.max_drones -= 1
+        self.rect = self.img.get_rect(center=(self.pos.x, self.pos.y))
+        self.zone.drone_load += 1
 
     def move(self, destination: Zone) -> None:
-        "Move to any zone. Does not check if the move is legal."
-        self.zone.max_drones += 1
-        destination.max_drones -= 1
+        """Move to any zone. Does not check if the move is legal,
+        only if the destination is `None`."""
+        if destination.drone_load >= destination.max_drones \
+                and destination.zonetype != ZoneType.END:
+            return
+        print(f'{self.name}-{destination.name}', end=' ')
+        self.zone.drone_load -= 1
+        destination.drone_load += 1
         self.zone = destination
 
-    def find_path(self, graph: list[Zone], goal: Zone) -> list[Zone]:
-        "Implementation of Dijkstra's algorithm."
+    def dijkstras(self, graph: list[Zone], goal: Zone) -> list[Zone]:
+        """Implementation of Dijkstra's algorithm.
+
+        Args:
+            graph: List of all zones that make up the network.
+            goal: Zone to find a path to.
+
+        Returns:
+            List of zones that make up the path,
+            or an empty list if no path could be found."""
         g = {
             x.name: {
                 'zone': x,
@@ -34,8 +48,6 @@ class Drone:
                 'prev': None
             }
             for x in graph
-            if x.zonetype != ZoneType.BLOCKED
-            # and x.max_drones > 0
         }
 
         visited = set()
@@ -53,6 +65,7 @@ class Drone:
                 neighbor = g[link[0].name]
                 distance = int(
                     neighbor['zone'].zonetype == ZoneType.RESTRICTED
+                    or link[0].drone_load >= link[0].max_drones
                 ) + 1
                 if current['cost'] + distance < neighbor['cost']:
                     neighbor['cost'] = current['cost'] + distance
@@ -61,17 +74,34 @@ class Drone:
             visited.add(queue[0].name)
             queue.pop(0)
 
-        # Collapse path
-        path = []
+        # Collapse the path.
+        path: list[Zone] = []
         current = g[goal.name]
         while current['prev']:
             path.append(current['zone'])
             current = g[current['prev'].name]
         path.reverse()
+
+        # Print the path for debugging purposes.
+        # print('\nPath:')
+        # for i, x in enumerate(path):
+        #     print(i, ':', x.name)
+
         return path
+
+    def update(self) -> None:
+        self.speed *= 0.75
+        wishdir = self.zone.pos - self.pos
+        if wishdir.length() > 32:
+            self.speed += (self.zone.pos - self.pos).normalize() * 2
+        else:
+            self.speed *= 0.75
+        self.pos += self.speed
 
     def draw(self, screen: pygame.Surface, offset: tuple) -> None:
         screen.blit(
             self.img,
-            self.rect.move(*offset)
+            self.rect.move(
+                (self.pos.x + offset[0], self.pos.y + offset[1])
+            )
         )

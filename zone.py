@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 import webcolors
 
 import pygame
+from pygame import Vector2
 
 import assets
 
@@ -51,8 +52,11 @@ class Zone:
                     webcolors.name_to_rgb(self.color),
                     special_flags=pygame.BLEND_MULT
                 )
+
+        self.drone_load = 0
+        self.pos = Vector2(self.x * 128, self.y * 128)
         self.img = assets.IMG[asset]
-        self.rect = self.img.get_rect(center=(self.x, self.y))
+        self.rect = self.img.get_rect(center=self.pos)
 
         self.label = pygame.font.Font.render(
             assets.FONT,
@@ -62,8 +66,8 @@ class Zone:
             (0, 0, 0)
         )
         self.label_rect = self.label.get_rect(
-            left=self.x + 12,
-            top=self.y + 12,
+            left=self.pos.x + 12,
+            top=self.pos.y + 12,
         )
 
     def __str__(self) -> str:
@@ -73,9 +77,6 @@ class Zone:
             f'{self.color.capitalize():<12} {self.max_drones:>2}'
         linknames = [x[0].name for x in self.links]
         return f'{result}\n\033[2m└─> {", ".join(linknames)}\033[0m'
-
-    def pos(self) -> tuple[int, int]:
-        return (self.x, self.y)
 
     def draw(self, screen: pygame.Surface, offset: tuple) -> None:
         screen.blit(
