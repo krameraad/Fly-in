@@ -50,7 +50,7 @@ zones = build(data)
 start, end = data['start_hub']['name'], data['end_hub']['name']
 links = [Link(zones[x[0]].pos(), zones[x[1]].pos(), x[2])
          for x in data['links']]
-drones = [Drone(f'D{i + 1}', zones[start], zones[end])
+drones = [Drone(f'D{i + 1}', zones[start])
           for i in range(data['nb_drones'])]
 
 
@@ -58,18 +58,12 @@ print(f'\033[1mNumber of drones: {data['nb_drones']}\033[0m')
 print(f"\033[1m{'Zone':<24} {'x':>4} {'y':>4} {'Type':<12} "
       f"{'Color':<6} {'Capacity'}\033[0m\n",
       '\033[2m', "-" * 63, '\033[0m', sep='')
-for k, v in zones.items():
-    print(v)
+for x in zones.values():
+    print(x)
 
-
-zonetable = {
-    k: {
-        'zone': v,
-        'cost': float('inf'),
-        'prev': None
-    }
-    for k, v in zones.items()
-}
+print('\nPath:')
+for i, x in enumerate(drones[0].find_path(list(zones.values()), zones[end])):
+    print(i, ':', x.name)
 
 
 running = True
@@ -94,8 +88,8 @@ while running:
     # screen.blit(assets.IMG['bg'], bg_rect)
     for x in links:
         x.draw(screen, ctx.get_offset())
-    for k, v in zones.items():
-        v.draw(screen, ctx.get_offset())
+    for x in zones.values():
+        x.draw(screen, ctx.get_offset())
     for x in drones:
         x.draw(screen, ctx.get_offset())
 
