@@ -55,19 +55,24 @@ class Zone:
 
         self.drone_load = 0
         self.pos = Vector2(self.x * 128, self.y * 128)
+
         self.img = assets.IMG[asset]
         self.rect = self.img.get_rect(center=self.pos)
-
-        self.label = pygame.font.Font.render(
-            assets.FONT,
-            f'max {self.max_drones}',
-            True,
-            (255, 255, 255),
-            (0, 0, 0)
-        )
+        self.label = assets.IMG['label']
         self.label_rect = self.label.get_rect(
-            left=self.pos.x + 12,
-            top=self.pos.y + 12,
+            left=self.pos.x - 64,
+            top=self.pos.y - 32,
+        )
+
+        self.labeltext = pygame.font.Font.render(
+            assets.FONT,
+            f'{self.max_drones:>2}',
+            True,
+            (255, 255, 255)
+        )
+        self.labeltext_rect = self.labeltext.get_rect(
+            left=self.pos.x + 16,
+            top=self.pos.y + 19,
         )
 
     def __str__(self) -> str:
@@ -83,9 +88,13 @@ class Zone:
             self.img,
             self.rect.move(*offset)
         )
-        if self.max_drones > 1:
+        if self.max_drones != 1:
             screen.blit(
                 self.label,
                 self.label_rect.move(*offset),
+            )
+            screen.blit(
+                self.labeltext,
+                self.labeltext_rect.move(*offset),
                 (0, 0, 128, 21)
             )
