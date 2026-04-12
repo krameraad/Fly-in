@@ -19,12 +19,16 @@ class Drone:
         self.img = assets.IMG['drone']
         self.rect = self.img.get_rect(center=(self.pos.x, self.pos.y))
         self.lagged = False
+        self.path = []
 
         self.zone.drone_load += 1
 
-    def move(self, destination: Zone) -> None:
-        """Move to any zone. Does not check if the move is legal,
+    def move(self) -> None:
+        """Move to the next zone. Does not check if the move is legal,
         only if the destination is `None`."""
+        if not self.path:
+            return
+        destination = self.path[0]
         if destination.drone_load >= destination.max_drones \
                 and destination.zonetype != ZoneType.END:
             return
@@ -36,19 +40,20 @@ class Drone:
         print(f'{self.name}-{destination.name}', end=' ')
         self.zone.drone_load -= 1
         destination.drone_load += 1
-        self.zone = destination
+        self.zone = self.path.pop(0)
 
     def dijkstras(
             self,
             graph: list[Zone],
             goal: Zone,
-            loadmap: dict[str, int]
+            traffic: dict[str, int]
             ) -> list[Zone]:
         """Implementation of Dijkstra's algorithm.
 
         Args:
             graph: List of all zones that make up the network.
             goal: Zone to find a path to.
+            traffic: Map of congestion for each node.
 
         Returns:
             List of zones that make up the path,
@@ -77,11 +82,11 @@ class Drone:
                 current = g[queue[0].name]
                 neighbor = g[link[0].name]
                 distance = 100
-                if neighbor['zone'].zonetype == ZoneType.RESTRICTED \
-                        or loadmap[link[0].name] >= link[0].max_drones:
+                if neighbor['zone'].zonetype == ZoneType.RESTRICTED:
                     distance *= 2
                 if neighbor['zone'].zonetype == ZoneType.PRIORITY:
                     distance // 100
+                distance += 100 * traffic[link[0].name]
                 if current['cost'] + distance < neighbor['cost']:
                     neighbor['cost'] = current['cost'] + distance
                     neighbor['prev'] = current['zone']
@@ -102,15 +107,16 @@ class Drone:
         # for i, x in enumerate(path):
         #     print(i, ':', x.name)
 
+        self.path = path
         return path
 
     def update(self) -> None:
         self.speed *= 0.75
         wishdir = self.zone.pos - self.pos
         if wishdir.length() > 16:
-            self.speed += (self.zone.pos - self.pos).normalize() * 2
+            self.speed += (self.zone.pos - self.pos).normalize() * 3
         else:
-            self.speed *= 0.75
+            self.speed *= 0.5
         self.pos += self.speed
 
     def draw(self, screen: pygame.Surface, offset: tuple) -> None:

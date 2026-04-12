@@ -16,7 +16,6 @@ turncount = 0
 
 
 def execute_turn(
-        zones: dict[str, Zone],
         goal: Zone,
         drones: list[Drone]
         ) -> None:
@@ -25,13 +24,10 @@ def execute_turn(
     if all([drone.zone is goal for drone in drones]):
         return
     turncount += 1
-    loadmap = {k: v.drone_load for k, v in zones.items()}
     for drone in drones:
         if drone.zone is goal:
             continue
-        path = drone.dijkstras(list(zones.values()), goal, loadmap)
-        if path:
-            drone.move(path[0])
+        drone.move()
     print()
 
 
@@ -55,12 +51,19 @@ drones = [Drone(f'D{i + 1}', zones[start])
           for i in range(data['nb_drones'])]
 
 
-print(f'\033[1mNumber of drones: {data['nb_drones']}\033[0m')
-print(f"\033[1m{'Zone':<24} {'x':>4} {'y':>4} {'Type':<12} "
-      f"{'Color':<6} {'Capacity'}\033[0m\n",
-      '\033[2m', "-" * 63, '\033[0m', sep='')
-for x in zones.values():
-    print(x)
+# Calculate all paths in advance, taking expected congestion in account.
+traffic = {x: 0 for x in zones}
+for drone in drones:
+    for x in drone.dijkstras(list(zones.values()), zones[end], traffic):
+        traffic[x.name] += 1
+
+
+# print(f'\033[1mNumber of drones: {data['nb_drones']}\033[0m')
+# print(f"\033[1m{'Zone':<24} {'x':>4} {'y':>4} {'Type':<12} "
+#       f"{'Color':<6} {'Capacity'}\033[0m\n",
+#       '\033[2m', "-" * 63, '\033[0m', sep='')
+# for x in zones.values():
+#     print(x)
 
 
 ui_1 = pygame.font.Font.render(
@@ -110,7 +113,7 @@ while running:
             running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             if pygame.mouse.get_pressed()[0]:
-                execute_turn(zones, zones[end], drones)
+                execute_turn(zones[end], drones)
         if event.type == pygame.KEYDOWN:
             if keys[pygame.K_SPACE]:
                 autoplay = not autoplay
@@ -140,7 +143,7 @@ while running:
         autoplay_timer += clock.get_time()
         if autoplay_timer > 500:
             autoplay_timer -= 500
-            execute_turn(zones, zones[end], drones)
+            execute_turn(zones[end], drones)
 
 # Optionally print total turn count for debugging.
 # print('Turn count:', turncount)
