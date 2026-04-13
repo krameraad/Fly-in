@@ -81,12 +81,11 @@ class Drone:
 
                 current = g[queue[0].name]
                 neighbor = g[link[0].name]
-                distance = 100
+                distance = 100 + (100 * traffic[link[0].name])
                 if neighbor['zone'].zonetype == ZoneType.RESTRICTED:
                     distance *= 2
                 if neighbor['zone'].zonetype == ZoneType.PRIORITY:
-                    distance // 100
-                distance += 100 * traffic[link[0].name]
+                    distance //= 2
                 if current['cost'] + distance < neighbor['cost']:
                     neighbor['cost'] = current['cost'] + distance
                     neighbor['prev'] = current['zone']
