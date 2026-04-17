@@ -1,6 +1,5 @@
 from enum import Enum, auto
 from dataclasses import dataclass, field
-import webcolors
 
 import pygame
 from pygame import Vector2
@@ -31,32 +30,11 @@ class Zone:
     a tuple of connected `Zone` and `max_link_capacity`."""
 
     def __post_init__(self) -> None:
-        base_img = assets.IMG[f'zone_{self.zonetype.name.lower()}']
-        asset = f'zone_{self.zonetype.name.lower()}:{self.color}'
-
-        if asset not in assets.IMG:
-            assets.IMG.update({asset: base_img.copy()})
-            if self.color == 'rainbow':
-                assets.IMG[asset].blit(
-                    assets.IMG['rainbow'],
-                    (0, 0),
-                    special_flags=pygame.BLEND_MULT
-                )
-            elif self.color == 'black':
-                mask = assets.IMG[asset].copy()
-                mask.fill((255, 255, 255), special_flags=pygame.BLEND_ADD)
-                mask.blit(base_img, (0, 0), special_flags=pygame.BLEND_SUB)
-                assets.IMG.update({asset: mask})
-            else:
-                assets.IMG[asset].fill(
-                    webcolors.name_to_rgb(self.color),
-                    special_flags=pygame.BLEND_MULT
-                )
-
         self.drone_load = 0
         self.pos = Vector2(self.x * 128, self.y * 128)
 
-        self.img = assets.IMG[asset]
+        self.img = assets.get_colored(
+            f'zone_{self.zonetype.name.lower}', self.color)
         self.rect = self.img.get_rect(center=self.pos)
         self.label = assets.IMG['label']
         self.label_rect = self.label.get_rect(

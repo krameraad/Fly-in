@@ -12,13 +12,11 @@ from parser import parse
 from builder import build
 
 
+X, R = '\033[0m', '\033[91m'
 turncount = 0
 
 
-def execute_turn(
-        goal: Zone,
-        drones: list[Drone]
-        ) -> None:
+def execute_turn(goal: Zone, drones: list[Drone]) -> None:
     "Allow all drones to make a move towards the goal."
     global turncount
     if all([drone.zone is goal for drone in drones]):
@@ -39,16 +37,17 @@ pygame.display.set_caption('Fly-in')
 clock = pygame.time.Clock()
 
 assets.load_assets(Path('assets'))
-bg_rect = assets.IMG['bg'].get_rect(center=(800, 600))
+bg = assets.IMG['bg']
+bg_rect = bg.get_rect(center=(800, 600))
 
-cam = Vector2(w // 2, h // 2)
+cam = Vector2(w / 2, h / 2)
 data = parse(Path(sys.argv[1]))
 zones = build(data)
 start, end = data['start_hub']['name'], data['end_hub']['name']
 links = [Link(zones[x[0]].pos, zones[x[1]].pos, x[2])
          for x in data['links']]
 drones = [Drone(f'D{i + 1}', zones[start])
-          for i in range(data['nb_drones'])]
+          for i in range(data['nb_drones'] * 100)]
 
 
 # Calculate all paths in advance, taking expected congestion in account.
@@ -56,6 +55,7 @@ traffic = {x: 0 for x in zones}
 for drone in drones:
     for x in drone.dijkstras(list(zones.values()), zones[end], traffic):
         traffic[x.name] += 1
+# assert drones[0].path
 
 
 # print(f'\033[1mNumber of drones: {data['nb_drones']}\033[0m')
@@ -119,8 +119,7 @@ while running:
                 autoplay = not autoplay
                 autoplay_timer = 500
 
-    screen.fill((100, 100, 100))
-    screen.blit(assets.IMG['bg'], bg_rect)
+    screen.blit(bg, bg_rect)
     for x in links:
         x.draw(screen, cam)
     for x in zones.values():
@@ -142,9 +141,9 @@ while running:
     if autoplay:
         autoplay_timer += clock.get_time()
         if autoplay_timer > 500:
-            autoplay_timer -= 500
+            autoplay_timer -= 125
             execute_turn(zones[end], drones)
 
 # Optionally print total turn count for debugging.
-# print('Turn count:', turncount)
+print('Turn count:', turncount)
 pygame.quit()

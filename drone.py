@@ -12,11 +12,13 @@ class Drone:
     """Drone that moves between nodes."""
     name: str
     zone: Zone
+    "The path."
 
     def __post_init__(self) -> None:
         self.pos = Vector2(0, 0)
         self.speed = Vector2(0, 0)
         self.img = assets.IMG['drone']
+        self.alt_img = assets.get_colored('drone', 'black')
         self.rect = self.img.get_rect(center=(self.pos.x, self.pos.y))
         self.lagged = False
         self.path = []
@@ -24,8 +26,7 @@ class Drone:
         self.zone.drone_load += 1
 
     def move(self) -> None:
-        """Move to the next zone. Does not check if the move is legal,
-        only if the destination is `None`."""
+        """Move to the next zone."""
         if not self.path:
             return
         destination = self.path[0]
@@ -34,9 +35,11 @@ class Drone:
             return
         if self.lagged:
             self.lagged = False
+            self.img, self.alt_img = self.alt_img, self.img
             return
         if destination.zonetype == ZoneType.RESTRICTED:
             self.lagged = True
+            self.img, self.alt_img = self.alt_img, self.img
         print(f'{self.name}-{destination.name}', end=' ')
         self.zone.drone_load -= 1
         destination.drone_load += 1
@@ -102,9 +105,9 @@ class Drone:
         path.reverse()
 
         # Print the path for debugging purposes.
-        # print('\nPath:')
-        # for i, x in enumerate(path):
-        #     print(i, ':', x.name)
+        print('\nPath:')
+        for i, x in enumerate(path):
+            print(i, ':', x.name)
 
         self.path = path
         return path
@@ -112,7 +115,7 @@ class Drone:
     def update(self) -> None:
         self.speed *= 0.75
         wishdir = self.zone.pos - self.pos
-        if wishdir.length() > 16:
+        if wishdir.length() > 32:
             self.speed += (self.zone.pos - self.pos).normalize() * 3
         else:
             self.speed *= 0.5

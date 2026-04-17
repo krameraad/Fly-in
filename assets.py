@@ -1,6 +1,8 @@
 from pathlib import Path
 
+import webcolors
 import pygame
+from pygame import Surface
 
 
 IMG: dict[str, pygame.Surface] = {}
@@ -10,6 +12,41 @@ FONT: pygame.font.Font = pygame.font.Font(
     'font/lovely-pixels.otf', size=24)
 FONT_BIG: pygame.font.Font = pygame.font.Font(
     'font/lovely-pixels.otf', size=48)
+
+
+def get_colored(image: str, color: str) -> Surface:
+    """Tries to get the colored version of an image.
+    If it doesn't exist yet,
+    creates a colored version of the asset and stores it in `assets`.
+    Returns the resulting surface."""
+    def get_black(image: str) -> Surface:
+        result = IMG[image].copy()
+        result.fill((255, 255, 255), special_flags=pygame.BLEND_ADD)
+        result.blit(IMG[image], (0, 0), special_flags=pygame.BLEND_SUB)
+        IMG.update({f'{image}:black': result})
+        return result
+
+    def get_rainbow(image: str) -> Surface:
+        result = IMG[image].copy()
+        result.blit(IMG['rainbow'], (0, 0), special_flags=pygame.BLEND_MULT)
+        IMG.update({f'{image}:rainbow': result})
+        return result
+
+    result_key = f'{image}:{color}'
+    if result_key in IMG:
+        return IMG[result_key]
+
+    if color == 'black':
+        return get_black(image)
+    elif color == 'rainbow':
+        return get_rainbow(image)
+
+    result = IMG[image].copy()
+    result.fill(
+        webcolors.name_to_rgb(color), special_flags=pygame.BLEND_MULT)
+    IMG.update({result_key: result})
+    print(IMG)
+    return result
 
 
 def load_assets(path: Path) -> None:
