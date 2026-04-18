@@ -12,7 +12,6 @@ class Drone:
     """Drone that moves between nodes."""
     name: str
     zone: Zone
-    "The path."
 
     def __post_init__(self) -> None:
         self.pos = Vector2(0, 0)

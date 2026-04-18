@@ -10,7 +10,7 @@ from drone import Drone
 from link import Link
 from parser import parse
 from builder import build
-from formatting import X, H, D, R
+from formatting import X, H, D, R, Y
 
 
 turncount = 0
@@ -92,7 +92,7 @@ for drone in drones:
         traffic[x.name] += 1
 if any([not drone.path for drone in drones]):
     print(
-        f'{R}Warning: Drones could not find a path to the exit.{X}',
+        f'{Y}Warning: Drones could not find a path to the exit.{X}',
         file=sys.stderr
     )
 

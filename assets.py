@@ -4,8 +4,11 @@ import webcolors
 import pygame
 from pygame import Surface
 
+from formatting import X, Y
+
 
 IMG: dict[str, pygame.Surface] = {}
+NAMES: list[str] = webcolors.names()
 
 pygame.font.init()
 FONT: pygame.font.Font = pygame.font.Font(
@@ -32,6 +35,9 @@ def get_colored(image: str, color: str) -> Surface:
         IMG.update({f'{image}:rainbow': result})
         return result
 
+    if color not in NAMES:
+        print(f'{Y}Warning: Tried to get invalid color "{color}".{X}')
+        return IMG[image]
     result_key = f'{image}:{color}'
     if result_key in IMG:
         return IMG[result_key]

@@ -81,11 +81,13 @@ def parse(filename: Path) -> dict[str, Any]:
                     data['nb_drones'] = int(value)
                 case 'start_hub':
                     h = parse_hub(value)
-                    h['zonetype'] = ZoneType.START
+                    if not h.get('zonetype'):
+                        h['zonetype'] = ZoneType.START
                     data['start_hub'] = h
                 case 'end_hub':
                     h = parse_hub(value)
-                    h['zonetype'] = ZoneType.END
+                    if not h.get('zonetype'):
+                        h['zonetype'] = ZoneType.END
                     data['end_hub'] = h
                 case 'hub':
                     hubs.append(parse_hub(value))
