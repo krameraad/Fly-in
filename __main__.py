@@ -3,12 +3,13 @@ from pathlib import Path
 
 import pygame
 from pygame import Vector2
+from lark import LarkError
 
 import assets
 from zone import Zone
 from drone import Drone
 from link import Link
-from parser import parse
+from parser import parse, ParsingError
 from builder import build
 from formatting import X, H, D, R, Y
 
@@ -56,24 +57,8 @@ bg_rect = bg.get_rect()
 # -----------------------------------------------------------------------------
 try:
     data = parse(data)
-except (RuntimeError, OSError) as e:
-    print(f'{R}Error: {e}{X}')
-    sys.exit(1)
-missing_data = {'nb_drones', 'start_hub', 'end_hub'} - set(data)
-if missing_data:
-    print(
-        f'{R}Error: Critical map data is missing: {missing_data}.{X}',
-        file=sys.stderr
-    )
-    print(f"""{D}# Example map format
-    nb_drones: 1
-
-    start_hub: start 0 0 [color=lime]
-    hub: path_a1 1 0
-    end_hub: end 2 0 [color=red]
-
-    connection: start-path_a1
-    connection: path_a1-end{X}""")
+except (ParsingError, LarkError, OSError) as e:
+    print(f'{R}Error: {e}{X}', file=sys.stderr)
     sys.exit(1)
 
 zones = build(data)

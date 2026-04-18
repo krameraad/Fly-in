@@ -1,7 +1,105 @@
+import sys
 from pathlib import Path
 from typing import Any
 
+from lark import Lark, Transformer
+
 from zone import ZoneType
+from formatting import X, Y
+
+
+class ParsingError(Exception):
+    pass
+
+
+class TreeToMap(Transformer):
+    @staticmethod
+    def _validate_metadata(metadata: dict[str, str | int]):
+        expected = {'color', 'max_drones', 'zone', 'max_link_capacity'}
+        unexpected = set(metadata.keys()) - expected
+        if unexpected:
+            raise ParsingError(f'Unexpected metadata {unexpected}.')
+
+        zonetype = metadata.pop('zone', None)
+        if zonetype:
+            try:
+                metadata['zonetype'] = ZoneType[zonetype.upper()]
+            except KeyError:
+                print(
+                    f'{Y}Warning: Unexpected zone type "{zonetype}".{X}',
+                    file=sys.stderr
+                )
+                metadata['zonetype'] = ZoneType.NORMAL
+        return metadata
+
+    def NAME(self, token):
+        return str(token)
+
+    def INT(self, token):
+        return int(token)
+
+    def key(self, items):
+        return items[0]
+
+    def value(self, items):
+        return items[0]
+
+    def pair(self, items):
+        key, value = items
+        return (key, value)
+
+    def metadata(self, items):
+        return dict(items)
+
+    def start_hub(self, items):
+        name, x, y, *meta = items
+        metadata = self._validate_metadata(meta[0]) if meta else {}
+        if 'zonetype' not in metadata:
+            metadata['zonetype'] = ZoneType.START
+        return ("start_hub", {"name": name, "x": x, "y": y} | metadata)
+
+    def end_hub(self, items):
+        name, x, y, *meta = items
+        metadata = self._validate_metadata(meta[0]) if meta else {}
+        if 'zonetype' not in metadata:
+            metadata['zonetype'] = ZoneType.END
+        return ("end_hub", {"name": name, "x": x, "y": y} | metadata)
+
+    def hub(self, items):
+        name, x, y, *meta = items
+        metadata = self._validate_metadata(meta[0]) if meta else {}
+        return ("hub", {"name": name, "x": x, "y": y} | metadata)
+
+    def connection(self, items):
+        a, b, *meta = items
+        metadata = meta[0] if meta else {}
+        metadata = metadata.get('max_link_capacity', 1)
+        return ("link", (a, b, metadata))
+
+    def nb_drones(self, items):
+        return ("nb_drones", items[0])
+
+    def start(self, items):
+        result: dict[str, int | dict | list] = {
+            "nb_drones": None,
+            "start_hub": None,
+            "end_hub": None,
+            "hubs": [],
+            "links": []
+        }
+        for item in items:
+            match item[0]:
+                case "nb_drones":
+                    result["nb_drones"] = item[1]
+                case "start_hub":
+                    result["start_hub"] = item[1]
+                case "end_hub":
+                    result["end_hub"] = item[1]
+                case "hub":
+                    result["hubs"].append(item[1])
+                case "link":
+                    result["links"].append(item[1])
+        return result
 
 
 def parse(filename: Path) -> dict[str, Any]:
@@ -23,85 +121,56 @@ def parse(filename: Path) -> dict[str, Any]:
         - `links` - List of links.
 
     Raises:
-        RuntimeError: When the input map file contains mistakes.
+        LarkError: When the input map file contains syntax errors.
+        ParsingError: When the input map file contains semantic errors.
     """
-    def parse_hub_metadata(pairs: list[str]) -> dict[str, Any]:
-        "Parse information for hub metadata."
-        result = {}
-        for pair in pairs:
-            k, v = pair.split('=')
-            match k:
-                case 'zone':
-                    result.update({'zonetype': ZoneType[v.upper()]})
-                case 'color':
-                    result.update({'color': v})
-                case 'max_drones':
-                    result.update({'max_drones': int(v)})
-                case _:
-                    raise RuntimeError(f'Invalid metadata {(k, v)} in map.')
-        return result
 
-    def parse_hub(s: str) -> dict[str, Any]:
-        "Parse information for building a hub."
-        result = {}
-        info = s.split(maxsplit=3)
-        result['name'] = info[0]
-        result['x'], result['y'] = int(info[1]), int(info[2])
-        if len(info) > 3:
-            result.update(parse_hub_metadata(info[3].strip('[]').split()))
-        return result
+    grammar = r"""
+start: line+
 
-    def parse_link(s: str) -> tuple[str, str, int]:
-        "Parse information for connecting two hubs."
-        info = s.split(maxsplit=1)
-        max_link_capacity = 1
-        if len(info) > 1:
-            max_link_capacity = int(info[1].strip('[]').split('=')[1])
-        return tuple(info[0].split('-') + [max_link_capacity])
+?line: nb_drones
+     | start_hub
+     | end_hub
+     | hub
+     | connection
 
-    data: dict[str, Any] = {}
+nb_drones: "nb_drones:" INT
+start_hub: "start_hub:" NAME INT INT metadata?
+end_hub: "end_hub:" NAME INT INT metadata?
+hub: "hub:" NAME INT INT metadata?
+connection: "connection:" NAME "-" NAME metadata?
+
+metadata: "[" pair+ "]"
+
+key: NAME
+value: NAME | INT
+pair: key "=" value
+
+NAME: /[a-zA-Z_][a-zA-Z0-9_]*/
+INT: /-?\d+/
+
+COMMENT: /#[^\n]*/
+
+%import common.WS
+%ignore WS
+%ignore COMMENT
+    """
+
+    map_parser = Lark(grammar, parser='lalr', transformer=TreeToMap())
     with filename.open("r", encoding="utf-8") as file:
-        hubs: list[dict[str, Any]] = []
-        links: list[tuple[str, str, int]] = []
+        tree = map_parser.parse(file.read())
 
-        for i, raw_line in enumerate(file, start=1):
-            line = raw_line.strip()
+        # Checking that critical data is supplied.
+        missing = {x for x in tree if tree[x] is None}
+        if missing:
+            raise ParsingError(f'Critical map data is missing: {missing}.')
 
-            # Ignore empty lines and comments
-            if not line or line.startswith("#"):
-                continue
-
-            if ":" not in line:
-                raise RuntimeError(f"Invalid line format at line {i}.")
-
-            key, value = line.split(":", maxsplit=1)
-            key, value = key.strip(), value.strip()
-            match key:
-                case 'nb_drones':
-                    data['nb_drones'] = int(value)
-                case 'start_hub':
-                    h = parse_hub(value)
-                    if not h.get('zonetype'):
-                        h['zonetype'] = ZoneType.START
-                    data['start_hub'] = h
-                case 'end_hub':
-                    h = parse_hub(value)
-                    if not h.get('zonetype'):
-                        h['zonetype'] = ZoneType.END
-                    data['end_hub'] = h
-                case 'hub':
-                    hubs.append(parse_hub(value))
-                case 'connection':
-                    links.append(parse_link(value))
-
-        all_hubs = [x['name'] for x in hubs] \
-            + [data['start_hub']['name']] + [data['end_hub']['name']]
-        for link in links:
+        # Checking that links connect to valid hubs.
+        all_hubs = [x['name'] for x in tree['hubs']] \
+            + [tree['start_hub']['name'], tree['end_hub']['name']]
+        for link in tree['links']:
             if link[0] not in all_hubs or link[1] not in all_hubs:
                 raise RuntimeError(
                     f'Link "{"-".join(link[:2])}" connects to an invalid hub.')
 
-        data['hubs'] = hubs
-        data['links'] = links
-
-    return data
+        return tree

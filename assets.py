@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import webcolors
@@ -36,7 +37,10 @@ def get_colored(image: str, color: str) -> Surface:
         return result
 
     if color not in NAMES:
-        print(f'{Y}Warning: Tried to get invalid color "{color}".{X}')
+        print(
+            f'{Y}Warning: Tried to get invalid color "{color}".{X}',
+            file=sys.stderr
+        )
         return IMG[image]
     result_key = f'{image}:{color}'
     if result_key in IMG:
