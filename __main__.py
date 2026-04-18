@@ -10,9 +10,9 @@ from drone import Drone
 from link import Link
 from parser import parse
 from builder import build
+from formatting import X, H, D, R
 
 
-X, R = '\033[0m', '\033[91m'
 turncount = 0
 
 
@@ -29,8 +29,19 @@ def execute_turn(goal: Zone, drones: list[Drone]) -> None:
     print()
 
 
-pygame.init()
+# Get the map file.
+# -----------------------------------------------------------------------------
+try:
+    data = Path(sys.argv[1])
+except IndexError:
+    print(f'{D}No map argument given, defaulting to interactive mode.{X}')
+    data = Path(input('Input name of map to load: ' + H))
+    print(X, end='')
 
+
+# Set up pygame.
+# -----------------------------------------------------------------------------
+pygame.init()
 w, h = 1600, 1200
 screen = pygame.display.set_mode((w, h))
 pygame.display.set_caption('Fly-in')
@@ -38,10 +49,33 @@ clock = pygame.time.Clock()
 
 assets.load_assets(Path('assets'))
 bg = assets.IMG['bg']
-bg_rect = bg.get_rect(center=(800, 600))
+bg_rect = bg.get_rect()
 
-cam = Vector2(w / 2, h / 2)
-data = parse(Path(sys.argv[1]))
+
+# Build the map.
+# -----------------------------------------------------------------------------
+try:
+    data = parse(data)
+except (RuntimeError, OSError) as e:
+    print(f'{R}Error: {e}{X}')
+    sys.exit(1)
+missing_data = {'nb_drones', 'start_hub', 'end_hub'} - set(data)
+if missing_data:
+    print(
+        f'{R}Error: Critical map data is missing: {missing_data}.{X}',
+        file=sys.stderr
+    )
+    print(f"""{D}# Example map format
+    nb_drones: 1
+
+    start_hub: start 0 0 [color=lime]
+    hub: path_a1 1 0
+    end_hub: end 2 0 [color=red]
+
+    connection: start-path_a1
+    connection: path_a1-end{X}""")
+    sys.exit(1)
+
 zones = build(data)
 start, end = data['start_hub']['name'], data['end_hub']['name']
 links = [Link(zones[x[0]].pos, zones[x[1]].pos, x[2])
@@ -51,21 +85,20 @@ drones = [Drone(f'D{i + 1}', zones[start])
 
 
 # Calculate all paths in advance, taking expected congestion in account.
+# -----------------------------------------------------------------------------
 traffic = {x: 0 for x in zones}
 for drone in drones:
     for x in drone.dijkstras(list(zones.values()), zones[end], traffic):
         traffic[x.name] += 1
-# assert drones[0].path
+if any([not drone.path for drone in drones]):
+    print(
+        f'{R}Warning: Drones could not find a path to the exit.{X}',
+        file=sys.stderr
+    )
 
 
-# print(f'\033[1mNumber of drones: {data['nb_drones']}\033[0m')
-# print(f"\033[1m{'Zone':<24} {'x':>4} {'y':>4} {'Type':<12} "
-#       f"{'Color':<6} {'Capacity'}\033[0m\n",
-#       '\033[2m', "-" * 63, '\033[0m', sep='')
-# for x in zones.values():
-#     print(x)
-
-
+# Initialize UI.
+# -----------------------------------------------------------------------------
 ui_1 = pygame.font.Font.render(
     assets.FONT_BIG,
     'Mouse 1: Next turn.',
@@ -100,6 +133,9 @@ ui_4 = pygame.font.Font.render(
 ui_4_rect = ui_4.get_rect(left=16, top=112)
 
 
+# Main loop.
+# -----------------------------------------------------------------------------
+cam = Vector2(w / 2, h / 2)
 autoplay, autoplay_timer = False, 500
 running = True
 while running:
@@ -120,13 +156,18 @@ while running:
                 autoplay_timer = 500
 
     screen.blit(bg, bg_rect)
+    hovertext, hoverrect = None, None
     for x in links:
         x.draw(screen, cam)
     for x in zones.values():
         x.draw(screen, cam)
+        if x.rect.move(cam).collidepoint(pygame.mouse.get_pos()):
+            hovertext, hoverrect = x.nametext, x.nametext_rect
     for x in drones:
         x.update()
         x.draw(screen, cam)
+    if hovertext:
+        screen.blit(hovertext, hoverrect)
 
     screen.blit(ui_1, ui_1_rect)
     screen.blit(ui_2, ui_2_rect)

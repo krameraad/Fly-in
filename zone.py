@@ -32,16 +32,28 @@ class Zone:
     def __post_init__(self) -> None:
         self.drone_load = 0
         self.pos = Vector2(self.x * 128, self.y * 128)
+        self.hovered = False
 
         self.img = assets.get_colored(
-            f'zone_{self.zonetype.name.lower}', self.color)
+            f'zone_{self.zonetype.name.lower()}', self.color)
         self.rect = self.img.get_rect(center=self.pos)
+
+        # Creating the zone's name label.
+        self.nametext = pygame.font.Font.render(
+            assets.FONT_BIG,
+            f'{self.name}',
+            True,
+            (255, 255, 255),
+            (0, 0, 0)
+        )
+        self.nametext_rect = self.nametext.get_rect(center=(800, 1100))
+
+        # Creating the max_drones label.
         self.label = assets.IMG['label']
         self.label_rect = self.label.get_rect(
             left=self.pos.x - 64,
             top=self.pos.y - 32,
         )
-
         self.labeltext = pygame.font.Font.render(
             assets.FONT,
             f'{self.max_drones:>2}',
@@ -61,18 +73,13 @@ class Zone:
         linknames = [x[0].name for x in self.links]
         return f'{result}\n\033[2m└─> {", ".join(linknames)}\033[0m'
 
-    def draw(self, screen: pygame.Surface, offset: tuple) -> None:
-        screen.blit(
-            self.img,
-            self.rect.move(*offset)
-        )
+    def draw(self, screen: pygame.Surface, offset: Vector2) -> None:
+        "Draw this object to `screen` with camera `offset`."
+        screen.blit(self.img, self.rect.move(offset))
         if self.max_drones != 1:
-            screen.blit(
-                self.label,
-                self.label_rect.move(*offset),
-            )
+            screen.blit(self.label, self.label_rect.move(offset))
             screen.blit(
                 self.labeltext,
-                self.labeltext_rect.move(*offset),
+                self.labeltext_rect.move(offset),
                 (0, 0, 128, 21)
             )

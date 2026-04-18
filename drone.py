@@ -105,14 +105,15 @@ class Drone:
         path.reverse()
 
         # Print the path for debugging purposes.
-        print('\nPath:')
-        for i, x in enumerate(path):
-            print(i, ':', x.name)
+        # print('\nPath:')
+        # for i, x in enumerate(path):
+        #     print(i, ':', x.name)
 
         self.path = path
         return path
 
     def update(self) -> None:
+        "Update this object's visual information."
         self.speed *= 0.75
         wishdir = self.zone.pos - self.pos
         if wishdir.length() > 32:
@@ -121,10 +122,6 @@ class Drone:
             self.speed *= 0.5
         self.pos += self.speed
 
-    def draw(self, screen: pygame.Surface, offset: tuple) -> None:
-        screen.blit(
-            self.img,
-            self.rect.move(
-                (self.pos.x + offset[0], self.pos.y + offset[1])
-            )
-        )
+    def draw(self, screen: pygame.Surface, offset: Vector2) -> None:
+        "Draw this object to `screen` with camera `offset`."
+        screen.blit(self.img, self.rect.move(self.pos + offset))

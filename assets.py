@@ -45,7 +45,6 @@ def get_colored(image: str, color: str) -> Surface:
     result.fill(
         webcolors.name_to_rgb(color), special_flags=pygame.BLEND_MULT)
     IMG.update({result_key: result})
-    print(IMG)
     return result
 
 

@@ -20,10 +20,12 @@ def parse(filename: Path) -> dict[str, Any]:
         - `start_hub` - Starting hub.
         - `end_hub` - End hub.
         - `hubs` - List of hubs, excluding start and end hubs.
-        - `links` - List of links."""
-    data: dict[str, Any] = {}
+        - `links` - List of links.
 
-    def parse_zone_metadata(pairs: list[str]) -> dict[str, Any]:
+    Raises:
+        RuntimeError: When the input map file contains mistakes.
+    """
+    def parse_hub_metadata(pairs: list[str]) -> dict[str, Any]:
         "Parse information for hub metadata."
         result = {}
         for pair in pairs:
@@ -36,17 +38,17 @@ def parse(filename: Path) -> dict[str, Any]:
                 case 'max_drones':
                     result.update({'max_drones': int(v)})
                 case _:
-                    raise RuntimeError(f'Invalid pair ({(k, v)}) in map.')
+                    raise RuntimeError(f'Invalid metadata {(k, v)} in map.')
         return result
 
-    def parse_zone(s: str) -> dict[str, Any]:
+    def parse_hub(s: str) -> dict[str, Any]:
         "Parse information for building a hub."
         result = {}
         info = s.split(maxsplit=3)
         result['name'] = info[0]
         result['x'], result['y'] = int(info[1]), int(info[2])
         if len(info) > 3:
-            result.update(parse_zone_metadata(info[3].strip('[]').split()))
+            result.update(parse_hub_metadata(info[3].strip('[]').split()))
         return result
 
     def parse_link(s: str) -> tuple[str, str, int]:
@@ -57,6 +59,7 @@ def parse(filename: Path) -> dict[str, Any]:
             max_link_capacity = int(info[1].strip('[]').split('=')[1])
         return tuple(info[0].split('-') + [max_link_capacity])
 
+    data: dict[str, Any] = {}
     with filename.open("r", encoding="utf-8") as file:
         hubs: list[dict[str, Any]] = []
         links: list[tuple[str, str, int]] = []
@@ -77,17 +80,25 @@ def parse(filename: Path) -> dict[str, Any]:
                 case 'nb_drones':
                     data['nb_drones'] = int(value)
                 case 'start_hub':
-                    h = parse_zone(value)
+                    h = parse_hub(value)
                     h['zonetype'] = ZoneType.START
                     data['start_hub'] = h
                 case 'end_hub':
-                    h = parse_zone(value)
+                    h = parse_hub(value)
                     h['zonetype'] = ZoneType.END
                     data['end_hub'] = h
                 case 'hub':
-                    hubs.append(parse_zone(value))
+                    hubs.append(parse_hub(value))
                 case 'connection':
                     links.append(parse_link(value))
+
+        all_hubs = [x['name'] for x in hubs] \
+            + [data['start_hub']['name']] + [data['end_hub']['name']]
+        for link in links:
+            if link[0] not in all_hubs or link[1] not in all_hubs:
+                raise RuntimeError(
+                    f'Link "{"-".join(link[:2])}" connects to an invalid hub.')
+
         data['hubs'] = hubs
         data['links'] = links
 
