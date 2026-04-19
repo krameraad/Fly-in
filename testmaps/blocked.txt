@@ -1,20 +1,20 @@
 nb_drones: 3
 
 start_hub: start 0 0 [color=black]
-hub: path_a1 1 -1
-hub: path_a2 2 -1
-hub: path_a3 3 -1
+hub: a1 1 -1
+hub: a2 2 -1
+hub: a3 3 -1
 hub: blocked 2 0 [zone=blocked color=red]
-hub: path_b1 1 1 [zone=restricted color=orange]
-hub: path_b2 3 1
+hub: b1 1 1 [zone=restricted color=orange]
+hub: b2 3 1
 end_hub: end 4 0 [color=black]
 
-connection: start-path_a1
+connection: start-a1
 connection: start-blocked
-connection: start-path_b1
-connection: path_a1-path_a2
-connection: path_a2-path_a3
-connection: path_b1-path_b2
-connection: path_a3-end
+connection: start-b1
+connection: a1-a2
+connection: a2-a3
+connection: b1-b2
+connection: a3-end
 connection: blocked-end
-connection: path_b2-end
+connection: b2-end

@@ -1,11 +1,15 @@
+# All CSS3 colors are available through the webcolors package.
+# This is the entire palette expressed as a fly-in map.
+# Also includes the special 'rainbow' color.
+
 nb_drones: 1
 
 start_hub: start 0 0 [color=black]
-hub: path_a1 1 0
+hub: a1 1 0
 end_hub: end 2 0 [color=black]
 
-connection: start-path_a1
-connection: path_a1-end
+connection: start-a1
+connection: a1-end
 
 hub: aliceblue 0 1 [color=aliceblue]
 hub: antiquewhite 0 2 [color=antiquewhite]
