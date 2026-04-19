@@ -8,14 +8,21 @@ from zone import Zone
 
 @dataclass
 class Link:
-    """Link to be drawn in the graphical display. No functionality."""
+    """Links two zones together."""
     hubs: tuple[Zone, Zone]
     max_link_capacity: int = 1
 
     def __post_init__(self) -> None:
+        self.hubs[0].neighbors.append((self.hubs[1], self.max_link_capacity))
+        self.hubs[1].neighbors.append((self.hubs[0], self.max_link_capacity))
+        self.drone_load = 0
+
         self.start = self.hubs[0].pos
         self.end = self.hubs[1].pos
-        self.thickness = 6 * self.max_link_capacity
+        self.thickness = min(6 * self.max_link_capacity, 48)
+
+    def __str__(self):
+        return "-".join(sorted([self.hubs[0].name, self.hubs[1].name]))
 
     def draw(self, screen: pygame.Surface, offset: Vector2) -> None:
         "Draw this object to `screen` with camera `offset`."

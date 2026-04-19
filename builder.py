@@ -1,18 +1,38 @@
+from drone import Drone
 from zone import Zone
+from link import Link
 
 
-def build(data: dict) -> dict[str, Zone]:
-    """Creates a dictionary containing all necessary objects for the map.
+def build(
+        data: dict
+        ) -> tuple[list[Drone], Zone, Zone, dict[str, Zone], list[Link]]:
+    """Returns a tuple containing all necessary objects for the map.
+    Objects are as follows:
+    1. `drones`
+    2. `start_hub`
+    3. `end_hub`
+    4. `zones`
+    5. `links`
     """
-    start_hub = Zone(**data['start_hub'])
-    end_hub = Zone(**data['end_hub'])
+    start = Zone(**data['start_hub'])
+    end = Zone(**data['end_hub'])
 
     hubs: dict[str, Zone] = {x['name']: Zone(**x) for x in data['hubs']}
-    hubs.update({start_hub.name: start_hub, end_hub.name: end_hub})
+    hubs.update({start.name: start, end.name: end})
 
+    drones = [Drone(f'D{i + 1}', start) for i in range(data['nb_drones'])]
+
+    links: list[Link] = []
     for link in data['links']:
-        hubs[link['hubs'][0]].links.append(
-            (hubs[link['hubs'][1]], link['max_link_capacity']))
-        hubs[link['hubs'][1]].links.append(
-            (hubs[link['hubs'][0]], link['max_link_capacity']))
-    return hubs
+        links.append(Link(
+            (hubs[link['hubs'][0]], hubs[link['hubs'][1]]),
+            link['max_link_capacity']
+        ))
+
+    return (
+        drones,
+        start,
+        end,
+        hubs,
+        links
+    )

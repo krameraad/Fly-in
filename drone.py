@@ -5,6 +5,7 @@ from pygame import Vector2
 
 import assets
 from zone import Zone, ZoneType
+from link import Link
 
 
 @dataclass
@@ -24,7 +25,7 @@ class Drone:
 
         self.zone.drone_load += 1
 
-    def move(self) -> None:
+    def move(self, links: list[Link]) -> None:
         """Move to the next zone."""
         if not self.path:
             return
@@ -32,16 +33,26 @@ class Drone:
             self.lagged = False
             self.img, self.alt_img = self.alt_img, self.img
             return
-        destination = self.path[0]
-        if destination.drone_load >= destination.max_drones \
-                and destination.zonetype != ZoneType.END:
-            return
-        if destination.zonetype == ZoneType.RESTRICTED:
+        dest = self.path[0]
+
+        # Get and set the link load and capacity.
+        link_cap, link_load = 0, 0
+        key = "-".join(sorted([self.zone.name, dest.name]))
+        for x in links:
+            if str(x) == key:
+                link_cap, link_load = x.max_link_capacity, x.drone_load
+                x.drone_load += 1
+                break
+
+        if dest.zonetype != ZoneType.END:
+            if dest.drone_load >= dest.max_drones or link_load >= link_cap:
+                return
+        if dest.zonetype == ZoneType.RESTRICTED:
             self.lagged = True
             self.img, self.alt_img = self.alt_img, self.img
-        print(f'{self.name}-{destination.name}', end=' ')
+        print(f'{self.name}-{dest.name}', end=' ')
         self.zone.drone_load -= 1
-        destination.drone_load += 1
+        dest.drone_load += 1
         self.zone = self.path.pop(0)
 
     def dijkstras(
@@ -75,15 +86,15 @@ class Drone:
         g[self.zone.name]['cost'] = 0
 
         while queue:
-            for link in queue[0].links:
-                if link[0].zonetype == ZoneType.BLOCKED:
+            for z, i in queue[0].neighbors:
+                if z.zonetype == ZoneType.BLOCKED:
                     continue
-                if link[0].name not in visited:
-                    queue.append(link[0])
+                if z.name not in visited:
+                    queue.append(z)
 
                 current = g[queue[0].name]
-                neighbor = g[link[0].name]
-                distance = 100 + (100 * traffic[link[0].name])
+                neighbor = g[z.name]
+                distance = 100 + (100 * traffic[z.name])
                 if neighbor['zone'].zonetype == ZoneType.RESTRICTED:
                     distance *= 2
                 if neighbor['zone'].zonetype == ZoneType.PRIORITY:

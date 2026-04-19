@@ -8,12 +8,12 @@ import assets
 
 
 class ZoneType(Enum):
-    NORMAL = auto()         # Normal path.
-    BLOCKED = auto()        # Inaccessible.
-    RESTRICTED = auto()     # 2-turn movement.
-    PRIORITY = auto()       # 1-turn, preferred if possible.
-    START = auto()          # Start.
-    END = auto()            # End.
+    NORMAL = auto()      # Normal path.
+    BLOCKED = auto()     # Inaccessible.
+    RESTRICTED = auto()  # 2-turn movement.
+    PRIORITY = auto()    # 1-turn, preferred if possible.
+    START = auto()       # Start.
+    END = auto()         # End.
 
 
 @dataclass
@@ -25,9 +25,7 @@ class Zone:
     zonetype: ZoneType = ZoneType.NORMAL
     color: str = 'white'
     max_drones: int = 1
-    links: list[tuple['Zone', int]] = field(default_factory=list)
-    """List of connections as
-    a tuple of connected `Zone` and `max_link_capacity`."""
+    neighbors: list[tuple['Zone', int]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.drone_load = 0

@@ -17,16 +17,18 @@ from formatting import X, H, D, R, Y
 turncount = 0
 
 
-def execute_turn(goal: Zone, drones: list[Drone]) -> None:
+def execute_turn(goal: Zone, drones: list[Drone], links: list[Link]) -> None:
     "Allow all drones to make a move towards the goal."
     global turncount
     if all([drone.zone is goal for drone in drones]):
         return
     turncount += 1
+    for link in links:
+        link.drone_load = 0
     for drone in drones:
         if drone.zone is goal:
             continue
-        drone.move()
+        drone.move(links)
     print()
 
 
@@ -56,28 +58,17 @@ bg_rect = bg.get_rect()
 # Build the map.
 # -----------------------------------------------------------------------------
 try:
-    data = parse(data)
+    drones, start, end, zones, links = build(parse(data))
 except (ParsingError, LarkError, OSError) as e:
     print(f'{R}Error: {e}{X}', file=sys.stderr)
     sys.exit(1)
-
-zones = build(data)
-start, end = data['start_hub']['name'], data['end_hub']['name']
-
-links = []
-for link in data['links']:
-    links.append(Link(
-        (zones[link['hubs'][0]], zones[link['hubs'][1]]),
-        link['max_link_capacity']
-    ))
-drones = [Drone(f'D{i + 1}', zones[start]) for i in range(data['nb_drones'])]
 
 
 # Calculate all paths in advance, taking expected congestion in account.
 # -----------------------------------------------------------------------------
 traffic = {x: 0 for x in zones}
 for drone in drones:
-    for x in drone.dijkstras(list(zones.values()), zones[end], traffic):
+    for x in drone.dijkstras(list(zones.values()), end, traffic):
         traffic[x.name] += 1
 if any([not drone.path for drone in drones]):
     print(
@@ -122,12 +113,13 @@ ui_4 = pygame.font.Font.render(
 ui_4_rect = ui_4.get_rect(left=16, top=112)
 
 
-# Main loop.
+# Main pygame loop.
 # -----------------------------------------------------------------------------
 cam = Vector2(w / 2, h / 2)
-autoplay, autoplay_timer = False, 500
+autoplay, autoplay_timer = False, 0
 running = True
 while running:
+    # Handle events.
     for event in pygame.event.get():
         mouse_movement = pygame.mouse.get_rel()
         if pygame.mouse.get_pressed()[2]:
@@ -138,12 +130,12 @@ while running:
             running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             if pygame.mouse.get_pressed()[0]:
-                execute_turn(zones[end], drones)
+                execute_turn(end, drones, links)
         if event.type == pygame.KEYDOWN:
             if keys[pygame.K_SPACE]:
-                autoplay = not autoplay
-                autoplay_timer = 500
+                autoplay, autoplay_timer = not autoplay, 0
 
+    # Update and draw objects.
     screen.blit(bg, bg_rect)
     hovertext, hoverrect = None, None
     for x in links:
@@ -158,6 +150,7 @@ while running:
     if hovertext:
         screen.blit(hovertext, hoverrect)
 
+    # Draw UI.
     screen.blit(ui_1, ui_1_rect)
     screen.blit(ui_2, ui_2_rect)
     if autoplay:
@@ -165,14 +158,15 @@ while running:
     else:
         screen.blit(ui_3, ui_3_rect)
 
+    # Update screen and clock.
     pygame.display.flip()
     clock.tick(60)
 
     if autoplay:
-        autoplay_timer += clock.get_time()
-        if autoplay_timer > 500:
-            autoplay_timer -= 125
-            execute_turn(zones[end], drones)
+        autoplay_timer -= clock.get_time()
+        if autoplay_timer <= 0:
+            autoplay_timer += 250
+            execute_turn(end, drones, links)
 
 # Optionally print total turn count for debugging.
 print('Turn count:', turncount)
