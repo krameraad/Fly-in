@@ -5,11 +5,8 @@
 nb_drones: 1
 
 start_hub: start 0 0 [color=black]
-hub: a1 1 0
-end_hub: end 2 0 [color=black]
-
-connection: start-a1
-connection: a1-end
+hub: path_a1 1 0
+end_hub: goal 2 0 [color=black]
 
 hub: aliceblue 0 1 [color=aliceblue]
 hub: antiquewhite 0 2 [color=antiquewhite]
@@ -159,3 +156,6 @@ hub: whitesmoke 10 5 [color=whitesmoke]
 hub: yellow 10 6 [color=yellow]
 hub: yellowgreen 10 7 [color=yellowgreen]
 hub: rainbow 10 8 [color=rainbow]
+
+connection: start-path_a1
+connection: path_a1-goal
