@@ -26,7 +26,7 @@ def build(
     for link in data['links']:
         links.append(Link(
             (hubs[link['hubs'][0]], hubs[link['hubs'][1]]),
-            link['max_link_capacity']
+            link.get('max_link_capacity', 1)
         ))
 
     return (

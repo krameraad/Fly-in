@@ -1,11 +1,9 @@
-import sys
 from pathlib import Path
 from typing import Any
 
 from lark import Lark, Transformer
 
 from zone import ZoneType
-from formatting import X, Y
 
 
 class ParsingError(Exception):
@@ -14,72 +12,66 @@ class ParsingError(Exception):
 
 class TreeToMap(Transformer):
     @staticmethod
-    def _validate_metadata(metadata: dict[str, str | int]):
-        expected = {'color', 'max_drones', 'zone', 'max_link_capacity'}
-        unexpected = set(metadata.keys()) - expected
-        if unexpected:
-            raise ParsingError(f'Unexpected metadata {unexpected}.')
+    def _validate_unique(name: str, registry: set[str]) -> None:
+        if name in registry:
+            raise ParsingError(f'"{name}" is duplicated.')
+        registry.add(name)
 
-        zonetype = metadata.pop('zone', None)
-        if zonetype:
-            try:
-                metadata['zonetype'] = ZoneType[zonetype.upper()]
-            except KeyError:
-                print(
-                    f'{Y}Warning: Unexpected zone type "{zonetype}".{X}',
-                    file=sys.stderr
-                )
-                metadata['zonetype'] = ZoneType.NORMAL
-        return metadata
+    def VALIDZONE(self, token) -> ZoneType:
+        return ZoneType[str(token).upper()]
 
-    def NAME(self, token):
+    def ALPHA(self, token: Any) -> str:
         return str(token)
 
-    def INT(self, token):
+    def ALNUM(self, token: Any) -> str:
+        return str(token)
+
+    def INT(self, token: Any) -> int:
         return int(token)
 
-    def key(self, items):
-        return items[0]
+    def ABOVE_ZERO(self, token: Any) -> int:
+        return int(token)
 
-    def value(self, items):
-        return items[0]
+    def meta_zone(self, items: Any) -> dict[str, Any]:
+        return {"zonetype": items[0]}
 
-    def pair(self, items):
-        key, value = items
-        return (key, value)
+    def meta_color(self, items: Any) -> dict[str, Any]:
+        return {"color": items[0]}
 
-    def metadata(self, items):
-        return dict(items)
+    def meta_max(self, items: Any) -> dict[str, Any]:
+        return {"max_drones": items[0]}
 
-    def start_hub(self, items):
+    def meta_link(self, items: Any) -> dict[str, Any]:
+        return {"max_link_capacity": items[0]}
+
+    def start_hub(self, items: Any) -> tuple[str, dict[str, Any]]:
         name, x, y, *meta = items
-        metadata = self._validate_metadata(meta[0]) if meta else {}
+        metadata = {k: v for d in meta for k, v in d.items()}
         if 'zonetype' not in metadata:
             metadata['zonetype'] = ZoneType.START
         return ("start_hub", {"name": name, "x": x, "y": y} | metadata)
 
-    def end_hub(self, items):
+    def end_hub(self, items: Any) -> tuple[str, dict[str, Any]]:
         name, x, y, *meta = items
-        metadata = self._validate_metadata(meta[0]) if meta else {}
+        metadata = {k: v for d in meta for k, v in d.items()}
         if 'zonetype' not in metadata:
             metadata['zonetype'] = ZoneType.END
         return ("end_hub", {"name": name, "x": x, "y": y} | metadata)
 
-    def hub(self, items):
+    def any_hub(self, items: Any) -> tuple[str, dict[str, Any]]:
         name, x, y, *meta = items
-        metadata = self._validate_metadata(meta[0]) if meta else {}
+        metadata = {k: v for d in meta for k, v in d.items()}
         return ("hub", {"name": name, "x": x, "y": y} | metadata)
 
-    def connection(self, items):
+    def connection(self, items: Any) -> tuple[str, dict[str, Any]]:
         a, b, *meta = items
         metadata = meta[0] if meta else {}
-        metadata = metadata.get('max_link_capacity', 1)
-        return ("link", {'hubs': (a, b), 'max_link_capacity': metadata})
+        return ("link", {'hubs': (a, b)} | metadata)
 
-    def nb_drones(self, items):
+    def nb_drones(self, items: Any) -> tuple[str, Any]:
         return ("nb_drones", items[0])
 
-    def start(self, items):
+    def start(self, items: Any) -> dict[str, int | dict | list]:
         result: dict[str, int | dict | list] = {
             "nb_drones": None,
             "start_hub": None,
@@ -87,17 +79,31 @@ class TreeToMap(Transformer):
             "hubs": [],
             "links": []
         }
+        registry = set()
         for item in items:
             match item[0]:
                 case "nb_drones":
                     result["nb_drones"] = item[1]
+
                 case "start_hub":
+                    if result['start_hub'] is not None:
+                        raise ParsingError('"start_hub" key is duplicated.')
+                    self._validate_unique(item[1]['name'], registry)
                     result["start_hub"] = item[1]
+
                 case "end_hub":
+                    if result['end_hub'] is not None:
+                        raise ParsingError('"end_hub" key is duplicated.')
+                    self._validate_unique(item[1]['name'], registry)
                     result["end_hub"] = item[1]
+
                 case "hub":
+                    self._validate_unique(item[1]['name'], registry)
                     result["hubs"].append(item[1])
+
                 case "link":
+                    self._validate_unique(
+                        '-'.join(sorted(item[1]['hubs'])), registry)
                     result["links"].append(item[1])
         return result
 
@@ -121,33 +127,37 @@ def parse(filename: Path) -> dict[str, Any]:
         - `links` - List of links.
 
     Raises:
-        LarkError: When the input map file contains syntax errors.
-        ParsingError: When the input map file contains semantic errors.
+        LarkError: When the input map file contains Lark parser errors.
+        ParsingError: When the input map file contains miscellaneous errors.
     """
 
     grammar = r"""
-start: line+
+start: nb_drones hub* connection*
 
-?line: nb_drones
-     | start_hub
-     | end_hub
-     | hub
-     | connection
+?hub: start_hub
+    | end_hub
+    | any_hub
 
-nb_drones: "nb_drones:" INT
-start_hub: "start_hub:" NAME INT INT metadata?
-end_hub: "end_hub:" NAME INT INT metadata?
-hub: "hub:" NAME INT INT metadata?
-connection: "connection:" NAME "-" NAME metadata?
+nb_drones: "nb_drones:" ABOVE_ZERO
+start_hub: "start_hub:" ALNUM INT INT _hub_metadata?
+end_hub: "end_hub:" ALNUM INT INT _hub_metadata?
+any_hub: "hub:" ALNUM INT INT _hub_metadata?
+connection: "connection:" ALNUM "-" ALNUM _link_metadata?
 
-metadata: "[" pair+ "]"
+_hub_metadata: "[" meta_zone? meta_color? meta_max? "]"
+_link_metadata: "[" meta_link? "]"
 
-key: NAME
-value: NAME | INT
-pair: key "=" value
+meta_zone: "zone" "=" VALIDZONE
+meta_color: "color" "=" ALPHA
+meta_max: "max_drones" "=" ABOVE_ZERO
+meta_link: "max_link_capacity" "=" ABOVE_ZERO
 
-NAME: /[a-zA-Z_][a-zA-Z0-9_]*/
+VALIDZONE: "normal" | "blocked" | "restricted" | "priority"
+
+ALNUM: /[a-zA-Z_][a-zA-Z0-9_]*/
+ALPHA: /[a-zA-Z_]+/
 INT: /-?\d+/
+ABOVE_ZERO: /[1-9][0-9]*/
 
 COMMENT: /#[^\n]*/
 
@@ -172,7 +182,7 @@ COMMENT: /#[^\n]*/
             if link['hubs'][0] not in all_hubs \
                     or link['hubs'][1] not in all_hubs:
                 raise ParsingError(
-                    f'Link "{"-".join(link['hubs'])}'
-                    'connects to an invalid hub.')
+                    f'Link "{"-".join(link['hubs'])}"'
+                    ' connects to an invalid hub.')
 
         return tree
