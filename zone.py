@@ -63,14 +63,6 @@ class Zone:
             top=self.pos.y + 19,
         )
 
-    def __str__(self) -> str:
-        result = \
-            f'{self.name:<24} {self.x:>4} {self.y:>4} ' \
-            f'{self.zonetype.name.capitalize():<12} ' \
-            f'{self.color.capitalize():<12} {self.max_drones:>2}'
-        linknames = [x[0].name for x in self.links]
-        return f'{result}\n\033[2m└─> {", ".join(linknames)}\033[0m'
-
     def draw(self, screen: pygame.Surface, offset: Vector2) -> None:
         "Draw this object to `screen` with camera `offset`."
         screen.blit(self.img, self.rect.move(offset))

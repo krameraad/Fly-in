@@ -1,19 +1,19 @@
 install:
-	pip install -r requirements.txt
+	uv add --dev flake8 mypy
 
 run:
-	python3 fly-in.py
+	uv run python .
 
 debug:
-	python3 -m pdb fly-in.py default_config.txt
+	uv run pdb .
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	rm -rf .mypy_cache
 
-lint:
-	flake8 --exclude=.venv
-	python3 -m mypy . \
+lint: install
+	uv run flake8 --exclude=.venv
+	uv run mypy . \
 		--warn-return-any \
 		--warn-unused-ignores \
 		--ignore-missing-imports \
@@ -22,9 +22,11 @@ lint:
 		--explicit-package-bases \
 		--exclude '^(venv|\.venv|env)/'
 
-lint-strict:
-	flake8 --exclude=.venv
-	python3 -m mypy . \
+lint-strict: install
+	uv run flake8 --exclude=.venv
+	uv run mypy . \
 		--strict \
 		--explicit-package-bases \
 		--exclude '^(venv|\.venv|env)/'
+
+.PHONY: install run debug clean lint lint-strict

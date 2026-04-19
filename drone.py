@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import TypedDict
 
 import pygame
 from pygame import Vector2
@@ -6,6 +7,12 @@ from pygame import Vector2
 import assets
 from zone import Zone, ZoneType
 from link import Link
+
+
+class DijkstraTableEntry(TypedDict):
+    zone: Zone
+    cost: float
+    prev: Zone | None
 
 
 @dataclass
@@ -21,7 +28,7 @@ class Drone:
         self.alt_img = assets.get_colored('drone', 'black')
         self.rect = self.img.get_rect(center=(self.pos.x, self.pos.y))
         self.lagged = False
-        self.path = []
+        self.path: list[Zone] = []
 
         self.zone.drone_load += 1
 
@@ -72,7 +79,7 @@ class Drone:
             List of zones that make up the path,
             or an empty list if no path could be found."""
         # Make a table with the necessary information for each zone.
-        g = {
+        g: dict[str, DijkstraTableEntry] = {
             x.name: {
                 'zone': x,
                 'cost': float('inf'),
@@ -113,11 +120,6 @@ class Drone:
             path.append(current['zone'])
             current = g[current['prev'].name]
         path.reverse()
-
-        # Print the path for debugging purposes.
-        # print('\nPath:')
-        # for i, x in enumerate(path):
-        #     print(i, ':', x.name)
 
         self.path = path
         return path

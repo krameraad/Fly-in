@@ -1,9 +1,17 @@
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 from lark import Lark, Transformer
 
 from zone import ZoneType
+
+
+class TransformedTree(TypedDict):
+    nb_drones: int | None
+    start_hub: dict | None
+    end_hub: dict | None
+    hubs: list
+    links: list
 
 
 class ParsingError(Exception):
@@ -17,7 +25,7 @@ class TreeToMap(Transformer):
             raise ParsingError(f'"{name}" is duplicated.')
         registry.add(name)
 
-    def VALIDZONE(self, token) -> ZoneType:
+    def VALIDZONE(self, token: Any) -> ZoneType:
         return ZoneType[str(token).upper()]
 
     def ALPHA(self, token: Any) -> str:
@@ -71,15 +79,15 @@ class TreeToMap(Transformer):
     def nb_drones(self, items: Any) -> tuple[str, Any]:
         return ("nb_drones", items[0])
 
-    def start(self, items: Any) -> dict[str, int | dict | list]:
-        result: dict[str, int | dict | list] = {
+    def start(self, items: Any) -> TransformedTree:
+        result: TransformedTree = {
             "nb_drones": None,
             "start_hub": None,
             "end_hub": None,
             "hubs": [],
             "links": []
         }
-        registry = set()
+        registry: set[str] = set()
         for item in items:
             match item[0]:
                 case "nb_drones":
@@ -169,6 +177,7 @@ COMMENT: /#[^\n]*/
     map_parser = Lark(grammar, parser='lalr', transformer=TreeToMap())
     with filename.open("r", encoding="utf-8") as file:
         tree = map_parser.parse(file.read())
+        assert isinstance(tree, dict)
 
         # Checking that critical data is supplied.
         missing = {x for x in tree if tree[x] is None}

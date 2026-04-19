@@ -21,7 +21,7 @@ class Link:
         self.end = self.hubs[1].pos
         self.thickness = min(6 * self.max_link_capacity, 48)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "-".join(sorted([self.hubs[0].name, self.hubs[1].name]))
 
     def draw(self, screen: pygame.Surface, offset: Vector2) -> None:
