@@ -3,15 +3,18 @@ from dataclasses import dataclass
 import pygame
 from pygame import Vector2
 
+from zone import Zone
+
 
 @dataclass
 class Link:
     """Link to be drawn in the graphical display. No functionality."""
-    start: tuple[int, int]
-    end: tuple[int, int]
+    hubs: tuple[Zone, Zone]
     max_link_capacity: int = 1
 
     def __post_init__(self) -> None:
+        self.start = self.hubs[0].pos
+        self.end = self.hubs[1].pos
         self.thickness = 6 * self.max_link_capacity
 
     def draw(self, screen: pygame.Surface, offset: Vector2) -> None:

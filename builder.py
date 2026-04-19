@@ -11,6 +11,8 @@ def build(data: dict) -> dict[str, Zone]:
     hubs.update({start_hub.name: start_hub, end_hub.name: end_hub})
 
     for link in data['links']:
-        hubs[link[0]].links.append((hubs[link[1]], link[2]))
-        hubs[link[1]].links.append((hubs[link[0]], link[2]))
+        hubs[link['hubs'][0]].links.append(
+            (hubs[link['hubs'][1]], link['max_link_capacity']))
+        hubs[link['hubs'][1]].links.append(
+            (hubs[link['hubs'][0]], link['max_link_capacity']))
     return hubs

@@ -74,7 +74,7 @@ class TreeToMap(Transformer):
         a, b, *meta = items
         metadata = meta[0] if meta else {}
         metadata = metadata.get('max_link_capacity', 1)
-        return ("link", (a, b, metadata))
+        return ("link", {'hubs': (a, b), 'max_link_capacity': metadata})
 
     def nb_drones(self, items):
         return ("nb_drones", items[0])
@@ -169,8 +169,10 @@ COMMENT: /#[^\n]*/
         all_hubs = [x['name'] for x in tree['hubs']] \
             + [tree['start_hub']['name'], tree['end_hub']['name']]
         for link in tree['links']:
-            if link[0] not in all_hubs or link[1] not in all_hubs:
-                raise RuntimeError(
-                    f'Link "{"-".join(link[:2])}" connects to an invalid hub.')
+            if link['hubs'][0] not in all_hubs \
+                    or link['hubs'][1] not in all_hubs:
+                raise ParsingError(
+                    f'Link "{"-".join(link['hubs'])}'
+                    'connects to an invalid hub.')
 
         return tree

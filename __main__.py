@@ -63,10 +63,14 @@ except (ParsingError, LarkError, OSError) as e:
 
 zones = build(data)
 start, end = data['start_hub']['name'], data['end_hub']['name']
-links = [Link(zones[x[0]].pos, zones[x[1]].pos, x[2])
-         for x in data['links']]
-drones = [Drone(f'D{i + 1}', zones[start])
-          for i in range(data['nb_drones'])]
+
+links = []
+for link in data['links']:
+    links.append(Link(
+        (zones[link['hubs'][0]], zones[link['hubs'][1]]),
+        link['max_link_capacity']
+    ))
+drones = [Drone(f'D{i + 1}', zones[start]) for i in range(data['nb_drones'])]
 
 
 # Calculate all paths in advance, taking expected congestion in account.
