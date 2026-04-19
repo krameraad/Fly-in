@@ -1,8 +1,10 @@
-nb_drones: 1
+nb_drones: 5
 
 start_hub: start 0 0 [color=black]
-hub: path_a1 1 0 [max_drones=5]
-end_hub: end 2 0 [color=black]
+hub: path_a1 1 0 [color=royalblue max_drones=5]
+hub: path_a2 2 0 [color=royalblue max_drones=5]
+end_hub: end 3 0 [color=black]
 
 connection: start-path_a1 [max_link_capacity=5]
-connection: path_a1-end
+connection: path_a1-path_a2 [max_link_capacity=2]
+connection: path_a2-end [max_link_capacity=5]

@@ -66,7 +66,7 @@ start, end = data['start_hub']['name'], data['end_hub']['name']
 links = [Link(zones[x[0]].pos, zones[x[1]].pos, x[2])
          for x in data['links']]
 drones = [Drone(f'D{i + 1}', zones[start])
-          for i in range(data['nb_drones'] * 100)]
+          for i in range(data['nb_drones'])]
 
 
 # Calculate all paths in advance, taking expected congestion in account.

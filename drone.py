@@ -28,13 +28,13 @@ class Drone:
         """Move to the next zone."""
         if not self.path:
             return
-        destination = self.path[0]
-        if destination.drone_load >= destination.max_drones \
-                and destination.zonetype != ZoneType.END:
-            return
         if self.lagged:
             self.lagged = False
             self.img, self.alt_img = self.alt_img, self.img
+            return
+        destination = self.path[0]
+        if destination.drone_load >= destination.max_drones \
+                and destination.zonetype != ZoneType.END:
             return
         if destination.zonetype == ZoneType.RESTRICTED:
             self.lagged = True

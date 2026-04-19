@@ -9,7 +9,7 @@ from formatting import X, Y
 
 
 IMG: dict[str, pygame.Surface] = {}
-NAMES: list[str] = webcolors.names()
+NAMES: list[str] = webcolors.names() + ['rainbow']
 
 pygame.font.init()
 FONT: pygame.font.Font = pygame.font.Font(
