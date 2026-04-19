@@ -51,7 +51,7 @@ pygame.display.set_caption('Fly-in')
 clock = pygame.time.Clock()
 
 assets.load_assets(Path('assets'))
-bg = assets.IMG['bg']
+bg = pygame.transform.scale(assets.IMG['bg'], (w, h))
 bg_rect = bg.get_rect()
 
 
