@@ -32,13 +32,57 @@ def execute_turn(goal: Zone, drones: list[Drone], links: list[Link]) -> None:
     print()
 
 
+def list_maps(directory: Path, index: int = 0) -> list[str]:
+    "Print all maps in a directory, recursively."
+    result = []
+    print(f'\n{H}{directory}/{X}')
+    for file in directory.iterdir():
+        if not file.is_dir():
+            if file.suffix == '.txt':
+                result += [file]
+                print(
+                    f'{index:>4}.', str(file)
+                    .removeprefix(str(directory) + '/')
+                    .removesuffix('.txt'))
+                index += 1
+    for file in directory.iterdir():
+        if file.is_dir():
+            recursive_result = list_maps(file, index)
+            index += len(recursive_result)
+            result += recursive_result
+    return result
+
+
 # Get the map file.
 # -----------------------------------------------------------------------------
 try:
     data = Path(sys.argv[1])
 except IndexError:
     print(f'{D}No map argument given, defaulting to interactive mode.{X}')
-    data = Path(input('Input name of map to load: ' + H))
+
+    try:
+        maps = []
+        path_maps = Path('maps')
+        if path_maps.exists():
+            maps += list_maps(path_maps)
+        maps += list_maps(Path('testmaps'), len(maps))
+    except OSError as e:
+        print(f'{R}An error occurred while displaying map names.{X}',
+              file=sys.stderr)
+        print(f'{R}Error: {e}{X}', file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        map_index = int(input('Input index of map to load: ' + H))
+        if map_index > len(maps) - 1 or map_index < 0:
+            raise ValueError()
+        data = Path(maps[map_index])
+    except ValueError:
+        print(
+            f'{R}Error: input must be an integer'
+            f' between 0 and {len(maps)}.{X}',
+            file=sys.stderr)
+        sys.exit(1)
     print(X, end='')
 
 
@@ -58,9 +102,7 @@ bg_rect = bg.get_rect()
 # Build the map.
 # -----------------------------------------------------------------------------
 try:
-    built_data = build(parse(data))
-    drones: list[Drone] = built_data[0]
-    start, end, zones, links = built_data[1:]
+    drones, start, end, zones, links = build(parse(data))
 except (ParsingError, LarkError, OSError) as e:
     print(f'{R}Error: {e}{X}', file=sys.stderr)
     sys.exit(1)
@@ -172,5 +214,5 @@ while running:
             execute_turn(end, drones, links)
 
 # Optionally print total turn count for debugging.
-print('Turn count:', turncount)
+# print('Turn count:', turncount)
 pygame.quit()
