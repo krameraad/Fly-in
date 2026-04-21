@@ -2,10 +2,10 @@ install:
 	uv add --dev flake8 mypy
 
 run:
-	uv run python .
+	uv run .
 
 debug:
-	uv run pdb .
+	uv run python -m pdb __main__.py
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +

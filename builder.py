@@ -1,10 +1,12 @@
+from typing import Any
+
 from drone import Drone
 from zone import Zone
 from link import Link
 
 
 def build(
-        data: dict
+        data: dict[str, Any]
         ) -> tuple[list[Drone], Zone, Zone, dict[str, Zone], list[Link]]:
     """Returns a tuple containing all necessary objects for the map.
     Objects are as follows:

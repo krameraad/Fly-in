@@ -3,22 +3,23 @@ from typing import Any, TypedDict
 
 from lark import Lark, Transformer
 
-from zone import ZoneType
+from zone import Zone, ZoneType
+from link import Link
 
 
 class TransformedTree(TypedDict):
     nb_drones: int | None
-    start_hub: dict | None
-    end_hub: dict | None
-    hubs: list
-    links: list
+    start_hub: dict[str, Any] | None
+    end_hub: dict[str, Any] | None
+    hubs: list[Zone]
+    links: list[Link]
 
 
 class ParsingError(Exception):
     pass
 
 
-class TreeToMap(Transformer):
+class TreeToMap(Transformer[Any, TransformedTree]):
     @staticmethod
     def _validate_unique(name: str, registry: set[str]) -> None:
         if name in registry:

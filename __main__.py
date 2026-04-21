@@ -58,7 +58,9 @@ bg_rect = bg.get_rect()
 # Build the map.
 # -----------------------------------------------------------------------------
 try:
-    drones, start, end, zones, links = build(parse(data))
+    built_data = build(parse(data))
+    drones: list[Drone] = built_data[0]
+    start, end, zones, links = built_data[1:]
 except (ParsingError, LarkError, OSError) as e:
     print(f'{R}Error: {e}{X}', file=sys.stderr)
     sys.exit(1)
@@ -68,8 +70,8 @@ except (ParsingError, LarkError, OSError) as e:
 # -----------------------------------------------------------------------------
 traffic = {x: 0 for x in zones}
 for drone in drones:
-    for x in drone.dijkstras(list(zones.values()), end, traffic):
-        traffic[x.name] += 1
+    for zone in drone.dijkstras(list(zones.values()), end, traffic):
+        traffic[zone.name] += 1
 if any([not drone.path for drone in drones]):
     print(
         f'{Y}Warning: Drones could not find a path to the exit.{X}',
@@ -137,17 +139,18 @@ while running:
 
     # Update and draw objects.
     screen.blit(bg, bg_rect)
-    hovertext, hoverrect = None, None
-    for x in links:
-        x.draw(screen, cam)
-    for x in zones.values():
-        x.draw(screen, cam)
-        if x.rect.move(cam).collidepoint(pygame.mouse.get_pos()):
-            hovertext, hoverrect = x.nametext, x.nametext_rect
-    for x in drones:
-        x.update()
-        x.draw(screen, cam)
-    if hovertext:
+    display_hovertext = False
+    for link in links:
+        link.draw(screen, cam)
+    for zone in zones.values():
+        zone.draw(screen, cam)
+        if zone.rect.move(cam).collidepoint(pygame.mouse.get_pos()):
+            display_hovertext = True
+            hovertext, hoverrect = zone.nametext, zone.nametext_rect
+    for drone in drones:
+        drone.update()
+        drone.draw(screen, cam)
+    if display_hovertext:
         screen.blit(hovertext, hoverrect)
 
     # Draw UI.
