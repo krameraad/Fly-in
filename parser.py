@@ -22,7 +22,7 @@ class ParsingError(Exception):
 class TreeToMap(Transformer[Any, TransformedTree]):
     "Transforms a `ParseTree` into a dictionary used to build a Fly-In graph."
     @staticmethod
-    def _validate_unique(name: str, registry: set[str]) -> None:
+    def __validate_unique(name: str, registry: set[str]) -> None:
         if name in registry:
             raise ParsingError(f'"{name}" is duplicated.')
         registry.add(name)
@@ -98,21 +98,21 @@ class TreeToMap(Transformer[Any, TransformedTree]):
                 case "start_hub":
                     if result['start_hub'] is not None:
                         raise ParsingError('"start_hub" key is duplicated.')
-                    self._validate_unique(item[1]['name'], registry)
+                    self.__validate_unique(item[1]['name'], registry)
                     result["start_hub"] = item[1]
 
                 case "end_hub":
                     if result['end_hub'] is not None:
                         raise ParsingError('"end_hub" key is duplicated.')
-                    self._validate_unique(item[1]['name'], registry)
+                    self.__validate_unique(item[1]['name'], registry)
                     result["end_hub"] = item[1]
 
                 case "hub":
-                    self._validate_unique(item[1]['name'], registry)
+                    self.__validate_unique(item[1]['name'], registry)
                     result["hubs"].append(item[1])
 
                 case "link":
-                    self._validate_unique(
+                    self.__validate_unique(
                         '-'.join(sorted(item[1]['hubs'])), registry)
                     result["links"].append(item[1])
         return result
@@ -154,8 +154,12 @@ end_hub: "end_hub:" ALNUM INT INT _hub_metadata?
 any_hub: "hub:" ALNUM INT INT _hub_metadata?
 connection: "connection:" ALNUM "-" ALNUM _link_metadata?
 
-_hub_metadata: "[" meta_zone? meta_color? meta_max? "]"
-_link_metadata: "[" meta_link? "]"
+_hub_metadata: "[" meta_hub+ "]"
+_link_metadata: "[" meta_link "]"
+
+?meta_hub: meta_zone
+         | meta_color
+         | meta_max
 
 meta_zone: "zone" "=" VALIDZONE
 meta_color: "color" "=" ALPHA
