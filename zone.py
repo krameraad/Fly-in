@@ -18,7 +18,17 @@ class ZoneType(Enum):
 
 @dataclass
 class Zone:
-    """Node in a network of zones that can be traversed by drones."""
+    """Node in a network of zones that can be traversed by drones.
+
+    Args:
+        name: Name of the zone.
+        x: Horizontal position.
+        y: Vertical position.
+        zonetype: Should be one of `ZoneType` enum. Specifies extra rules.
+        color: Colors the image of the zone.
+        max_drones: How many drones can occupy this zone at a time.
+        neighbors: What zones is this zone connected to.
+    """
     name: str
     x: int
     y: int

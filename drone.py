@@ -17,7 +17,12 @@ class DijkstraTableEntry(TypedDict):
 
 @dataclass
 class Drone:
-    """Drone that moves between nodes."""
+    """Drone that moves between nodes.
+
+    Args:
+        name: Name of the drone.
+        zone: Starting zone.
+    """
     name: str
     zone: Zone
 

@@ -59,6 +59,7 @@ def get_colored(image: str, color: str) -> Surface:
 
 
 def load_assets(path: Path) -> None:
+    "Load all `.png` assets from `path`. Does not work recursively."
     for f in path.iterdir():
         if f.suffix == '.png':
             IMG.update({

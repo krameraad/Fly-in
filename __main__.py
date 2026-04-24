@@ -1,4 +1,9 @@
+# Suppress errors for module imports not at top of file,
+# because we have to set the env variable before pygame imports.
+# flake8: noqa: E402
 import sys
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 from pathlib import Path
 
 import pygame
@@ -32,7 +37,7 @@ def execute_turn(goal: Zone, drones: list[Drone], links: list[Link]) -> None:
     print()
 
 
-def list_maps(directory: Path, index: int = 0) -> list[str]:
+def list_maps(directory: Path, index: int = 0) -> list[Path]:
     "Print all maps in a directory, recursively."
     result = []
     print(f'\n{H}{directory}/{X}')
@@ -80,16 +85,18 @@ except IndexError:
     except ValueError:
         print(
             f'{R}Error: input must be an integer'
-            f' between 0 and {len(maps)}.{X}',
+            f' between 0 and {len(maps) - 1}.{X}',
             file=sys.stderr)
         sys.exit(1)
-    print(X, end='')
+    print(X)
 
 
 # Set up pygame.
 # -----------------------------------------------------------------------------
 pygame.init()
 w, h = 1600, 1200
+pygame.display.set_icon(pygame.image.load('assets/drone.png'))
+
 screen = pygame.display.set_mode((w, h))
 pygame.display.set_caption('Fly-in')
 clock = pygame.time.Clock()

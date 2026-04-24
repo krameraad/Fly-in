@@ -20,6 +20,7 @@ class ParsingError(Exception):
 
 
 class TreeToMap(Transformer[Any, TransformedTree]):
+    "Transforms a `ParseTree` into a dictionary used to build a Fly-In graph."
     @staticmethod
     def _validate_unique(name: str, registry: set[str]) -> None:
         if name in registry:

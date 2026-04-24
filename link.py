@@ -8,7 +8,12 @@ from zone import Zone
 
 @dataclass
 class Link:
-    """Links two zones together."""
+    """Links two zones together.
+
+    Args:
+        hubs: Tuple of two zones to link.
+        max_link_capacity: How many drones can move on this link per turn.
+    """
     hubs: tuple[Zone, Zone]
     max_link_capacity: int = 1
 
