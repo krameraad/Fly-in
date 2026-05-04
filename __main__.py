@@ -60,9 +60,9 @@ def list_maps(directory: Path, index: int = 0) -> list[Path]:
 
 # Get the map file.
 # -----------------------------------------------------------------------------
-try:
+if len(sys.argv) > 1:
     data = Path(sys.argv[1])
-except IndexError:
+else:
     print(f'{D}No map argument given, defaulting to interactive mode.{X}')
 
     try:
@@ -77,12 +77,10 @@ except IndexError:
         print(f'{R}Error: {e}{X}', file=sys.stderr)
         sys.exit(1)
 
-    try:
-        map_index = int(input('Input index of map to load: ' + H))
-        if map_index > len(maps) - 1 or map_index < 0:
-            raise ValueError()
+    map_index = int(input('Input index of map to load: ' + H))
+    if 0 <= map_index < len(maps):
         data = Path(maps[map_index])
-    except ValueError:
+    else:
         print(
             f'{R}Error: input must be an integer'
             f' between 0 and {len(maps) - 1}.{X}',

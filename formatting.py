@@ -7,5 +7,5 @@ D = '\033[2m'
 "Dim text formatting."
 R = '\033[1;91m'
 "Red (error) text formatting."
-Y = '\033[33m'
+Y = '\033[93m'
 "Yellow (warning) text formatting."
